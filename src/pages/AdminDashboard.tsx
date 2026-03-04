@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
@@ -59,6 +59,7 @@ const sidebarItems = [
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [feedbackList, setFeedbackList] = useState<FeedbackRow[]>([]);
@@ -67,6 +68,7 @@ const AdminDashboard = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [shipId, setShipId] = useState<string | null>(null);
+  const [isSystemOwner, setIsSystemOwner] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -79,6 +81,25 @@ const AdminDashboard = () => {
       return;
     }
 
+    // Check if system owner
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "system_owner");
+    
+    if (roles && roles.length > 0) {
+      setIsSystemOwner(true);
+    }
+
+    // Check for ship query param first
+    const shipParam = searchParams.get("ship");
+    if (shipParam) {
+      setShipId(shipParam);
+      loadFeedback(shipParam);
+      return;
+    }
+
     // Get user's ship
     const { data: membership } = await supabase
       .from("ship_members")
@@ -87,7 +108,6 @@ const AdminDashboard = () => {
       .limit(1)
       .maybeSingle();
 
-    // Also check if system owner with any ship
     if (membership?.ship_id) {
       setShipId(membership.ship_id);
       loadFeedback(membership.ship_id);
@@ -345,7 +365,16 @@ const AdminDashboard = () => {
             </button>
           ))}
         </nav>
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-3 border-t border-sidebar-border space-y-1">
+          {isSystemOwner && (
+            <button
+              onClick={() => navigate("/admin/system")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors"
+            >
+              <Ship className="h-4 w-4" />
+              Fleet Management
+            </button>
+          )}
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors">
             <LogOut className="h-4 w-4" />
             Sign Out

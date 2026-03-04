@@ -14,23 +14,58 @@ const AdminLogin = () => {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     setLoading(true);
 
     try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName || email },
+            emailRedirectTo: window.location.origin,
+          },
+        });
+        if (error) {
+          toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+          return;
+        }
+        toast({ title: "Account created!", description: "You can now sign in." });
+        setIsSignUp(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast({ title: "Login failed", description: error.message, variant: "destructive" });
         return;
       }
-      navigate("/admin/dashboard");
+
+      // Check role and redirect accordingly
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+
+        const isSystemOwner = roles?.some((r) => r.role === "system_owner");
+        if (isSystemOwner) {
+          navigate("/admin/system");
+        } else {
+          navigate("/admin/dashboard");
+        }
+      }
     } catch (err) {
-      toast({ title: "Login failed", description: "An unexpected error occurred.", variant: "destructive" });
+      toast({ title: "Error", description: "An unexpected error occurred.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -58,10 +93,29 @@ const AdminLogin = () => {
 
         <Card className="shadow-xl border-0">
           <CardHeader className="pb-4">
-            <h2 className="text-lg font-semibold text-center">Sign In</h2>
+            <h2 className="text-lg font-semibold text-center">
+              {isSignUp ? "Create Account" : "Sign In"}
+            </h2>
+            {isSignUp && (
+              <p className="text-xs text-center text-muted-foreground">
+                First account becomes System Owner automatically.
+              </p>
+            )}
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignUp && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Your name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -83,6 +137,7 @@ const AdminLogin = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    minLength={6}
                   />
                   <button
                     type="button"
@@ -94,9 +149,18 @@ const AdminLogin = () => {
                 </div>
               </div>
               <Button type="submit" className="w-full h-11" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
               </Button>
             </form>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm text-primary hover:underline"
+              >
+                {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+              </button>
+            </div>
           </CardContent>
         </Card>
       </motion.div>
