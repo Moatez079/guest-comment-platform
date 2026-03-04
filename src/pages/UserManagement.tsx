@@ -126,7 +126,7 @@ const UserManagement = () => {
     // Add role for this ship
     const { error: roleError } = await supabase
       .from("user_roles")
-      .upsert({ user_id: userId, role: selectedRole as any, ship_id: selectedShip }, { onConflict: "user_id,role" });
+      .upsert({ user_id: userId, role: selectedRole as any, ship_id: selectedShip }, { onConflict: "user_id,role,ship_id" });
 
     if (roleError && !roleError.message.includes("duplicate")) {
       toast({ title: "Error", description: roleError.message, variant: "destructive" });
