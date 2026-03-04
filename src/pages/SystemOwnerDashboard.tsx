@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Anchor, Ship, Plus, Trash2, Users, BarChart3, Globe, MessageSquare,
+  MessageSquare, Ship, Plus, Trash2, Users, BarChart3, Globe,
   LogOut, Settings, ChevronRight, Loader2, FileText, Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -150,10 +150,10 @@ const SystemOwnerDashboard = () => {
         <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <Anchor className="h-5 w-5 text-sidebar-primary-foreground" />
+              <MessageSquare className="h-5 w-5 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <div className="font-display font-bold text-sm">Grand Rose</div>
+              <div className="font-display font-bold text-sm">Guest Comment</div>
               <div className="text-xs text-sidebar-foreground/60">System Owner</div>
             </div>
           </div>

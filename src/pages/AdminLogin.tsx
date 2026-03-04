@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Anchor, Eye, EyeOff } from "lucide-react";
+import { MessageSquare, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,7 +52,6 @@ const AdminLogin = () => {
       // Check role and approval status
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Check profile approval status
         const { data: profile } = await supabase
           .from("profiles")
           .select("status")
@@ -66,7 +65,6 @@ const AdminLogin = () => {
 
         const isSystemOwner = roles?.some((r) => r.role === "system_owner");
 
-        // System owners bypass approval check
         if (!isSystemOwner && profile?.status !== "approved") {
           await supabase.auth.signOut();
           if (profile?.status === "pending") {
@@ -104,9 +102,9 @@ const AdminLogin = () => {
             transition={{ type: "spring", stiffness: 200 }}
             className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary flex items-center justify-center shadow-xl"
           >
-            <Anchor className="h-8 w-8 text-primary-foreground" />
+            <MessageSquare className="h-8 w-8 text-primary-foreground" />
           </motion.div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Grand Rose Cruise</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground">Guest Comment</h1>
           <p className="text-sm text-muted-foreground mt-1">Admin Portal</p>
         </div>
 
@@ -140,7 +138,7 @@ const AdminLogin = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@grandrose.com"
+                  placeholder="admin@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

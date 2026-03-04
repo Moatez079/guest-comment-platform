@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Anchor, BarChart3, FileText, Users, Settings, LogOut,
-  Download, Trash2, Brain, TrendingUp, MessageSquare, Star, Ship,
+  MessageSquare, BarChart3, FileText, Users, Settings, LogOut,
+  Download, Trash2, Brain, TrendingUp, Star, Ship,
   RefreshCw, ChevronRight, AlertTriangle, ThumbsUp, Globe, Loader2, X, QrCode
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,7 @@ const AdminDashboard = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [shipId, setShipId] = useState<string | null>(null);
+  const [shipName, setShipName] = useState<string>("");
   const [isSystemOwner, setIsSystemOwner] = useState(false);
 
   useEffect(() => {
@@ -97,6 +98,8 @@ const AdminDashboard = () => {
     const shipParam = searchParams.get("ship");
     if (shipParam) {
       setShipId(shipParam);
+      supabase.from("ships").select("name").eq("id", shipParam).maybeSingle()
+        .then(({ data }) => { if (data?.name) setShipName(data.name); });
       loadFeedback(shipParam);
       return;
     }
@@ -111,12 +114,14 @@ const AdminDashboard = () => {
 
     if (membership?.ship_id) {
       setShipId(membership.ship_id);
+      supabase.from("ships").select("name").eq("id", membership.ship_id).maybeSingle()
+        .then(({ data }) => { if (data?.name) setShipName(data.name); });
       loadFeedback(membership.ship_id);
     } else {
-      // Try to get any ship (for system owners)
-      const { data: ships } = await supabase.from("ships").select("id").limit(1);
+      const { data: ships } = await supabase.from("ships").select("id, name").limit(1);
       if (ships && ships.length > 0) {
         setShipId(ships[0].id);
+        setShipName(ships[0].name);
         loadFeedback(ships[0].id);
       } else {
         setLoading(false);
@@ -248,7 +253,7 @@ const AdminDashboard = () => {
     // Title
     pdf.setFontSize(20);
     pdf.setTextColor(30, 64, 110);
-    pdf.text("Grand Rose Cruise", 10, y);
+    pdf.text("Guest Comment", 10, y);
     y += 8;
     pdf.setFontSize(14);
     pdf.setTextColor(180, 140, 60);
@@ -306,7 +311,7 @@ const AdminDashboard = () => {
       y = addText(`   Expected Impact: ${rec.expected_impact}`, y);
     });
 
-    pdf.save(`GrandRose_AI_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    pdf.save(`GuestComment_AI_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
     toast({ title: "PDF Downloaded", description: "AI report saved as PDF." });
   };
 
@@ -342,10 +347,10 @@ const AdminDashboard = () => {
         <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <Anchor className="h-5 w-5 text-sidebar-primary-foreground" />
+              <MessageSquare className="h-5 w-5 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <div className="font-display font-bold text-sm">Grand Rose</div>
+              <div className="font-display font-bold text-sm">Guest Comment</div>
               <div className="text-xs text-sidebar-foreground/60">Admin Portal</div>
             </div>
           </div>
@@ -724,7 +729,7 @@ const AdminDashboard = () => {
                 <h1 className="text-2xl font-display font-bold text-foreground">QR Code</h1>
                 <p className="text-sm text-muted-foreground">Generate and share QR codes for guest feedback.</p>
               </div>
-              <ShipQRCode shipId={shipId} />
+              <ShipQRCode shipId={shipId} shipName={shipName} />
             </motion.div>
           )}
 
