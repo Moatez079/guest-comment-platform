@@ -1,36 +1,321 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Anchor, BarChart3, FileText, Users, Settings, LogOut,
-  Download, Trash2, Brain, TrendingUp, MessageSquare, Star, Ship
+  Download, Trash2, Brain, TrendingUp, MessageSquare, Star, Ship,
+  RefreshCw, ChevronRight, AlertTriangle, ThumbsUp, Globe, Loader2, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
 
-const stats = [
-  { label: "Total Responses", value: "0", icon: MessageSquare, change: "+0 today" },
-  { label: "Average Rating", value: "N/A", icon: Star, change: "No data yet" },
-  { label: "Top Issue", value: "None", icon: TrendingUp, change: "No feedback yet" },
-  { label: "Active Ships", value: "1", icon: Ship, change: "Grand Rose" },
-];
+type AnalysisReport = {
+  executive_summary: string;
+  total_responses: number;
+  average_ratings: {
+    services: Record<string, number>;
+    facilities: Record<string, number>;
+    food: Record<string, number>;
+    overall_average: number;
+  };
+  top_performing: { area: string; score: number; note: string }[];
+  needs_improvement: { area: string; score: number; impact: string; suggestion: string }[];
+  recurring_issues: { issue: string; frequency: string; affected_area: string }[];
+  sentiment_analysis: {
+    overall: string;
+    positive_highlights: string[];
+    negative_highlights: string[];
+    notable_comments: { original: string; translated: string; sentiment: string; language: string }[];
+  };
+  language_distribution: { language: string; count: number; percentage: number }[];
+  recommendations: { priority: string; title: string; description: string; expected_impact: string }[];
+  generated_at: string;
+};
+
+type FeedbackRow = {
+  id: string;
+  ship_id: string;
+  room_number: string;
+  language: string;
+  ratings: any;
+  comments: any;
+  pdf_url: string | null;
+  image_url: string | null;
+  submitted_at: string;
+};
 
 const sidebarItems = [
-  { icon: BarChart3, label: "Dashboard", active: true },
-  { icon: FileText, label: "Feedback PDFs", active: false },
-  { icon: Brain, label: "AI Analytics", active: false },
-  { icon: Users, label: "Users", active: false },
-  { icon: Settings, label: "Settings", active: false },
+  { icon: BarChart3, label: "Dashboard" },
+  { icon: FileText, label: "Feedback PDFs" },
+  { icon: Brain, label: "AI Analytics" },
+  { icon: Users, label: "Users" },
+  { icon: Settings, label: "Settings" },
 ];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("Dashboard");
+  const [feedbackList, setFeedbackList] = useState<FeedbackRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [aiReport, setAiReport] = useState<AnalysisReport | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [shipId, setShipId] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkAuthAndLoad();
+  }, []);
+
+  const checkAuthAndLoad = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate("/admin/login");
+      return;
+    }
+
+    // Get user's ship
+    const { data: membership } = await supabase
+      .from("ship_members")
+      .select("ship_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+
+    // Also check if system owner with any ship
+    if (membership?.ship_id) {
+      setShipId(membership.ship_id);
+      loadFeedback(membership.ship_id);
+    } else {
+      // Try to get any ship (for system owners)
+      const { data: ships } = await supabase.from("ships").select("id").limit(1);
+      if (ships && ships.length > 0) {
+        setShipId(ships[0].id);
+        loadFeedback(ships[0].id);
+      } else {
+        setLoading(false);
+      }
+    }
+  };
+
+  const loadFeedback = async (sid: string) => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("feedback")
+      .select("*")
+      .eq("ship_id", sid)
+      .order("submitted_at", { ascending: false });
+
+    if (!error && data) {
+      setFeedbackList(data as FeedbackRow[]);
+    }
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/admin/login");
+  };
+
+  const generateAiReport = async () => {
+    if (!shipId) {
+      toast({ title: "No ship found", description: "Create a ship first.", variant: "destructive" });
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-feedback", {
+        body: { ship_id: shipId },
+      });
+
+      if (error) {
+        toast({ title: "AI Analysis Failed", description: error.message, variant: "destructive" });
+        return;
+      }
+
+      if (data?.error) {
+        toast({ title: "Analysis Error", description: data.error, variant: "destructive" });
+        return;
+      }
+
+      setAiReport(data as AnalysisReport);
+      setShowReport(true);
+      setActiveTab("AI Analytics");
+      toast({ title: "AI Report Generated!", description: "Your analysis is ready." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to generate report", variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const downloadAllPdfs = async () => {
+    const pdfFeedback = feedbackList.filter((f) => f.pdf_url);
+    if (pdfFeedback.length === 0) {
+      toast({ title: "No PDFs", description: "No feedback PDFs available to download." });
+      return;
+    }
+
+    for (const f of pdfFeedback) {
+      if (f.pdf_url) {
+        const { data } = await supabase.storage.from("feedback-files").download(f.pdf_url);
+        if (data) {
+          const url = URL.createObjectURL(data);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `feedback_room${f.room_number}_${f.submitted_at.slice(0, 10)}.pdf`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      }
+    }
+    toast({ title: "Download Complete", description: `Downloaded ${pdfFeedback.length} PDFs.` });
+  };
+
+  const deleteAllFeedback = async () => {
+    if (!shipId) return;
+    if (!confirm("Are you sure you want to delete ALL feedback? This cannot be undone.")) return;
+
+    // Delete storage files
+    const filePaths = feedbackList
+      .flatMap((f) => [f.pdf_url, f.image_url])
+      .filter(Boolean) as string[];
+
+    if (filePaths.length > 0) {
+      await supabase.storage.from("feedback-files").remove(filePaths);
+    }
+
+    // Delete feedback records
+    const { error } = await supabase.from("feedback").delete().eq("ship_id", shipId);
+    if (error) {
+      toast({ title: "Error", description: "Failed to delete feedback.", variant: "destructive" });
+    } else {
+      setFeedbackList([]);
+      setAiReport(null);
+      toast({ title: "Deleted", description: "All feedback has been deleted." });
+    }
+  };
+
+  const downloadReportPdf = () => {
+    if (!aiReport) return;
+    const pdf = new jsPDF("p", "mm", "a4");
+    const w = pdf.internal.pageSize.getWidth();
+    let y = 15;
+
+    const addSection = (title: string, yPos: number) => {
+      if (yPos > 270) { pdf.addPage(); yPos = 15; }
+      pdf.setFontSize(14);
+      pdf.setTextColor(30, 64, 110);
+      pdf.text(title, 10, yPos);
+      return yPos + 8;
+    };
+
+    const addText = (text: string, yPos: number, size = 10) => {
+      if (yPos > 275) { pdf.addPage(); yPos = 15; }
+      pdf.setFontSize(size);
+      pdf.setTextColor(50, 50, 50);
+      const lines = pdf.splitTextToSize(text, w - 20);
+      pdf.text(lines, 10, yPos);
+      return yPos + lines.length * (size * 0.5) + 4;
+    };
+
+    // Title
+    pdf.setFontSize(20);
+    pdf.setTextColor(30, 64, 110);
+    pdf.text("Grand Rose Cruise", 10, y);
+    y += 8;
+    pdf.setFontSize(14);
+    pdf.setTextColor(180, 140, 60);
+    pdf.text("AI Feedback Analysis Report", 10, y);
+    y += 6;
+    pdf.setFontSize(8);
+    pdf.setTextColor(130, 130, 130);
+    pdf.text(`Generated: ${new Date(aiReport.generated_at).toLocaleString()} | Total Responses: ${aiReport.total_responses}`, 10, y);
+    y += 10;
+
+    // Executive Summary
+    y = addSection("Executive Summary", y);
+    y = addText(aiReport.executive_summary, y);
+    y += 4;
+
+    // Overall Rating
+    y = addSection(`Overall Average Rating: ${aiReport.average_ratings.overall_average}%`, y);
+    y += 4;
+
+    // Top Performing
+    y = addSection("Top Performing Areas", y);
+    aiReport.top_performing.forEach((item) => {
+      y = addText(`✅ ${item.area}: ${item.score}% — ${item.note}`, y);
+    });
+    y += 2;
+
+    // Needs Improvement
+    y = addSection("Areas Needing Improvement", y);
+    aiReport.needs_improvement.forEach((item) => {
+      y = addText(`⚠️ ${item.area}: ${item.score}% [${item.impact}] — ${item.suggestion}`, y);
+    });
+    y += 2;
+
+    // Recurring Issues
+    y = addSection("Recurring Issues", y);
+    aiReport.recurring_issues.forEach((item) => {
+      y = addText(`• ${item.issue} (${item.frequency}) — ${item.affected_area}`, y);
+    });
+    y += 2;
+
+    // Sentiment
+    y = addSection(`Sentiment Analysis: ${aiReport.sentiment_analysis.overall.replace("_", " ")}`, y);
+    if (aiReport.sentiment_analysis.positive_highlights.length > 0) {
+      y = addText("Positive: " + aiReport.sentiment_analysis.positive_highlights.join(", "), y);
+    }
+    if (aiReport.sentiment_analysis.negative_highlights.length > 0) {
+      y = addText("Negative: " + aiReport.sentiment_analysis.negative_highlights.join(", "), y);
+    }
+    y += 2;
+
+    // Recommendations
+    y = addSection("Recommendations", y);
+    aiReport.recommendations.forEach((rec, i) => {
+      y = addText(`${i + 1}. [${rec.priority.toUpperCase()}] ${rec.title}: ${rec.description}`, y);
+      y = addText(`   Expected Impact: ${rec.expected_impact}`, y);
+    });
+
+    pdf.save(`GrandRose_AI_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    toast({ title: "PDF Downloaded", description: "AI report saved as PDF." });
+  };
+
+  // Compute quick stats
+  const totalResponses = feedbackList.length;
+  const avgRating = (() => {
+    if (feedbackList.length === 0) return "N/A";
+    const ratingMap: Record<string, number> = { excellent: 4, veryGood: 3, good: 2, fair: 1 };
+    let sum = 0, count = 0;
+    feedbackList.forEach((f) => {
+      if (f.ratings && typeof f.ratings === "object") {
+        Object.values(f.ratings as Record<string, string>).forEach((v) => {
+          if (ratingMap[v] !== undefined) { sum += ratingMap[v]; count++; }
+        });
+      }
+    });
+    if (count === 0) return "N/A";
+    const avg = sum / count;
+    return avg >= 3.5 ? "Excellent" : avg >= 2.5 ? "Very Good" : avg >= 1.5 ? "Good" : "Fair";
+  })();
+
+  const stats = [
+    { label: "Total Responses", value: String(totalResponses), icon: MessageSquare, change: `${feedbackList.filter((f) => new Date(f.submitted_at).toDateString() === new Date().toDateString()).length} today` },
+    { label: "Average Rating", value: avgRating, icon: Star, change: totalResponses > 0 ? "Across all items" : "No data yet" },
+    { label: "Languages", value: String(new Set(feedbackList.map((f) => f.language)).size), icon: Globe, change: "Unique languages" },
+    { label: "PDFs Available", value: String(feedbackList.filter((f) => f.pdf_url).length), icon: FileText, change: "Ready to download" },
+  ];
 
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border hidden md:flex">
+      <aside className="w-64 bg-sidebar text-sidebar-foreground flex-col border-r border-sidebar-border hidden md:flex">
         <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">
@@ -42,7 +327,6 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
-
         <nav className="flex-1 p-3 space-y-1">
           {sidebarItems.map((item) => (
             <button
@@ -51,7 +335,7 @@ const AdminDashboard = () => {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === item.label
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
               }`}
             >
               <item.icon className="h-4 w-4" />
@@ -59,12 +343,8 @@ const AdminDashboard = () => {
             </button>
           ))}
         </nav>
-
         <div className="p-3 border-t border-sidebar-border">
-          <button
-            onClick={() => navigate("/admin/login")}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors"
-          >
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors">
             <LogOut className="h-4 w-4" />
             Sign Out
           </button>
@@ -73,71 +353,347 @@ const AdminDashboard = () => {
 
       {/* Main content */}
       <main className="flex-1 p-6 overflow-auto">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-display font-bold text-foreground">Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Welcome back. Here's your ship overview.</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Download className="h-4 w-4" />
-                Download All
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive">
-                <Trash2 className="h-4 w-4" />
-                Delete All
-              </Button>
-              <Button size="sm" className="gap-2 bg-cruise-gold hover:bg-cruise-gold/90 text-white">
-                <Brain className="h-4 w-4" />
-                Generate AI Report
-              </Button>
-            </div>
-          </div>
+        <AnimatePresence mode="wait">
+          {activeTab === "Dashboard" && (
+            <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h1 className="text-2xl font-display font-bold text-foreground">Dashboard</h1>
+                  <p className="text-sm text-muted-foreground">Welcome back. Here's your ship overview.</p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" size="sm" className="gap-2" onClick={downloadAllPdfs}>
+                    <Download className="h-4 w-4" /> Download All
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteAllFeedback}>
+                    <Trash2 className="h-4 w-4" /> Delete All
+                  </Button>
+                  <Button size="sm" className="gap-2 bg-cruise-gold hover:bg-cruise-gold/90 text-white" onClick={generateAiReport} disabled={aiLoading}>
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+                    {aiLoading ? "Analyzing..." : "Generate AI Report"}
+                  </Button>
+                </div>
+              </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
+              {/* Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {stats.map((stat, i) => (
+                  <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+                    <Card>
+                      <CardContent className="p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm text-muted-foreground">{stat.label}</span>
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <stat.icon className="h-4 w-4 text-primary" />
+                          </div>
+                        </div>
+                        <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{stat.change}</div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Recent Feedback */}
+              {loading ? (
+                <Card><CardContent className="p-12 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /></CardContent></Card>
+              ) : feedbackList.length === 0 ? (
                 <Card>
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm text-muted-foreground">{stat.label}</span>
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <stat.icon className="h-4 w-4 text-primary" />
-                      </div>
+                  <CardContent className="p-12 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                      <FileText className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{stat.change}</div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No Feedback Yet</h3>
+                    <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                      Share the QR code with your guests to start collecting feedback.
+                    </p>
                   </CardContent>
                 </Card>
-              </motion.div>
-            ))}
-          </div>
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" /> Recent Feedback
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {feedbackList.slice(0, 10).map((f) => (
+                        <div key={f.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                              {f.room_number}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-foreground">Room {f.room_number}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(f.submitted_at).toLocaleString()} · {f.language.toUpperCase()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {f.pdf_url && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1"
+                                onClick={async () => {
+                                  const { data } = await supabase.storage.from("feedback-files").download(f.pdf_url!);
+                                  if (data) {
+                                    const url = URL.createObjectURL(data);
+                                    const a = document.createElement("a");
+                                    a.href = url;
+                                    a.download = `feedback_${f.room_number}.pdf`;
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                  }
+                                }}
+                              >
+                                <Download className="h-3 w-3" /> PDF
+                              </Button>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
+          )}
 
-          {/* Empty state */}
-          <Card>
-            <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                <FileText className="h-8 w-8 text-muted-foreground" />
+          {activeTab === "AI Analytics" && (
+            <motion.div key="ai" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h1 className="text-2xl font-display font-bold text-foreground">AI Analytics</h1>
+                  <p className="text-sm text-muted-foreground">AI-powered feedback analysis and insights.</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" className="gap-2 bg-cruise-gold hover:bg-cruise-gold/90 text-white" onClick={generateAiReport} disabled={aiLoading}>
+                    {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    {aiLoading ? "Analyzing..." : "Regenerate Report"}
+                  </Button>
+                  {aiReport && (
+                    <Button variant="outline" size="sm" className="gap-2" onClick={downloadReportPdf}>
+                      <Download className="h-4 w-4" /> Download PDF
+                    </Button>
+                  )}
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No Feedback Yet</h3>
-              <p className="text-muted-foreground text-sm max-w-md mx-auto mb-4">
-                Share the QR code with your guests to start collecting feedback. 
-                All submissions will appear here in real-time.
-              </p>
-              <Button variant="outline" className="gap-2">
-                <Ship className="h-4 w-4" />
-                View QR Code
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
+
+              {!aiReport ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <Brain className="h-12 w-12 mx-auto mb-4 text-cruise-gold" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">No Report Generated</h3>
+                    <p className="text-muted-foreground text-sm mb-4">Click "Generate AI Report" to analyze your feedback data.</p>
+                    <Button className="bg-cruise-gold hover:bg-cruise-gold/90 text-white gap-2" onClick={generateAiReport} disabled={aiLoading}>
+                      {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+                      Generate Report
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {/* Executive Summary */}
+                  <Card>
+                    <CardHeader><CardTitle className="text-lg">Executive Summary</CardTitle></CardHeader>
+                    <CardContent>
+                      <p className="text-foreground">{aiReport.executive_summary}</p>
+                      <div className="flex gap-4 mt-4 text-sm">
+                        <div className="px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium">
+                          Overall: {aiReport.average_ratings.overall_average}%
+                        </div>
+                        <div className="px-3 py-1.5 rounded-full bg-muted text-foreground font-medium">
+                          {aiReport.total_responses} responses
+                        </div>
+                        <div className="px-3 py-1.5 rounded-full bg-muted text-foreground font-medium capitalize">
+                          Sentiment: {aiReport.sentiment_analysis.overall.replace(/_/g, " ")}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Average Ratings */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(["services", "facilities", "food"] as const).map((section) => (
+                      <Card key={section}>
+                        <CardHeader><CardTitle className="text-base capitalize">{section} ({aiReport.average_ratings[section].average}%)</CardTitle></CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {Object.entries(aiReport.average_ratings[section])
+                              .filter(([k]) => k !== "average")
+                              .map(([key, val]) => (
+                                <div key={key} className="flex items-center justify-between">
+                                  <span className="text-sm text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full bg-primary transition-all"
+                                        style={{ width: `${val}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-sm font-medium w-10 text-right">{val}%</span>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Top & Needs Improvement */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader><CardTitle className="text-base flex items-center gap-2"><ThumbsUp className="h-4 w-4 text-cruise-excellent" /> Top Performing</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {aiReport.top_performing.map((item, i) => (
+                            <div key={i} className="p-2 rounded-lg bg-cruise-excellent/5 border border-cruise-excellent/20">
+                              <div className="flex justify-between text-sm">
+                                <span className="font-medium text-foreground">{item.area}</span>
+                                <span className="text-cruise-excellent font-bold">{item.score}%</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">{item.note}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader><CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-cruise-fair" /> Needs Improvement</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {aiReport.needs_improvement.map((item, i) => (
+                            <div key={i} className="p-2 rounded-lg bg-cruise-fair/5 border border-cruise-fair/20">
+                              <div className="flex justify-between text-sm">
+                                <span className="font-medium text-foreground">{item.area}</span>
+                                <span className="text-cruise-fair font-bold">{item.score}%</span>
+                              </div>
+                              <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
+                                item.impact === "high" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+                              }`}>{item.impact} impact</span>
+                              <p className="text-xs text-muted-foreground mt-1">{item.suggestion}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Recommendations */}
+                  <Card>
+                    <CardHeader><CardTitle className="text-base">Actionable Recommendations</CardTitle></CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {aiReport.recommendations.map((rec, i) => (
+                          <div key={i} className="flex gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                              rec.priority === "high" ? "bg-destructive text-destructive-foreground" :
+                              rec.priority === "medium" ? "bg-cruise-gold text-white" : "bg-muted-foreground text-background"
+                            }`}>{i + 1}</div>
+                            <div>
+                              <div className="text-sm font-medium text-foreground">{rec.title}</div>
+                              <p className="text-xs text-muted-foreground mt-0.5">{rec.description}</p>
+                              <p className="text-xs text-primary mt-1">Impact: {rec.expected_impact}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Language Distribution */}
+                  {aiReport.language_distribution.length > 0 && (
+                    <Card>
+                      <CardHeader><CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" /> Guest Language Distribution</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {aiReport.language_distribution.map((l) => (
+                            <div key={l.language} className="px-3 py-2 rounded-lg bg-muted border border-border text-sm">
+                              <span className="font-medium text-foreground">{l.language}</span>
+                              <span className="text-muted-foreground ml-2">{l.count} ({l.percentage}%)</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {activeTab === "Feedback PDFs" && (
+            <motion.div key="pdfs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-display font-bold text-foreground">Feedback PDFs</h1>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-2" onClick={downloadAllPdfs}>
+                    <Download className="h-4 w-4" /> Download All
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2 text-destructive" onClick={deleteAllFeedback}>
+                    <Trash2 className="h-4 w-4" /> Delete All
+                  </Button>
+                </div>
+              </div>
+              {feedbackList.length === 0 ? (
+                <Card><CardContent className="p-12 text-center text-muted-foreground">No feedback submissions yet.</CardContent></Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {feedbackList.map((f) => (
+                    <Card key={f.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-lg font-bold text-foreground">Room {f.room_number}</span>
+                          <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted">{f.language.toUpperCase()}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mb-3">{new Date(f.submitted_at).toLocaleString()}</div>
+                        {f.pdf_url ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full gap-2"
+                            onClick={async () => {
+                              const { data } = await supabase.storage.from("feedback-files").download(f.pdf_url!);
+                              if (data) {
+                                const url = URL.createObjectURL(data);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = `feedback_${f.room_number}.pdf`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              }
+                            }}
+                          >
+                            <Download className="h-3 w-3" /> Download PDF
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No PDF available</span>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {(activeTab === "Users" || activeTab === "Settings") && (
+            <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <h1 className="text-2xl font-display font-bold text-foreground mb-4">{activeTab}</h1>
+              <Card>
+                <CardContent className="p-12 text-center text-muted-foreground">
+                  {activeTab} management coming soon.
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
