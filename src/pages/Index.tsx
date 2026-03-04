@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Anchor, QrCode, BarChart3, Shield, Globe, ArrowRight } from "lucide-react";
+import { MessageSquare, QrCode, BarChart3, Shield, Globe, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const features = [
   { icon: QrCode, title: "QR-to-Form", desc: "Guests scan, select language, and rate – no login needed." },
   { icon: BarChart3, title: "AI Analytics", desc: "Smart insights, recurring issues, and downloadable PDF reports." },
-  { icon: Shield, title: "Multi-Tenant SaaS", desc: "Each cruise ship gets its own workspace with role-based access." },
+  { icon: Shield, title: "Multi-Tenant SaaS", desc: "Each ship gets its own workspace with role-based access." },
   { icon: Globe, title: "30+ Languages", desc: "Guests fill forms in their native language. Admins see everything in English." },
 ];
 
@@ -18,8 +18,8 @@ const Index = () => {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
-          <Anchor className="h-6 w-6 text-primary" />
-          <span className="font-display font-bold text-lg text-foreground">Grand Rose Cruise</span>
+          <MessageSquare className="h-6 w-6 text-primary" />
+          <span className="font-display font-bold text-lg text-foreground">Guest Comment</span>
         </div>
         <Button variant="outline" size="sm" onClick={() => navigate("/admin/login")}>
           Admin Login
@@ -37,17 +37,10 @@ const Index = () => {
             <span className="text-primary">Improve Guest Experience</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            A multi-tenant SaaS platform for cruise ships. QR-based feedback forms, 
+            A multi-tenant SaaS platform for ships & hotels. QR-based feedback forms, 
             AI-powered analytics, and downloadable PDF reports – all in one beautiful platform.
           </p>
           <div className="flex gap-3 justify-center">
-            <Button
-              size="lg"
-              className="gap-2 bg-primary hover:bg-primary/90 shadow-lg"
-              onClick={() => navigate("/ship/demo/feedback/lang")}
-            >
-              Try Guest Form <ArrowRight className="h-4 w-4" />
-            </Button>
             <Button
               size="lg"
               variant="outline"
@@ -81,7 +74,7 @@ const Index = () => {
       </section>
 
       <footer className="text-center py-6 border-t border-border">
-        <p className="text-sm text-muted-foreground">© 2026 Grand Rose Cruise. All rights reserved.</p>
+        <p className="text-sm text-muted-foreground">© 2026 Guest Comment. All rights reserved.</p>
       </footer>
     </div>
   );

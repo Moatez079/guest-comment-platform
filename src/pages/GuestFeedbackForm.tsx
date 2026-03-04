@@ -23,28 +23,30 @@ const GuestFeedbackForm = () => {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [resolvedShipId, setResolvedShipId] = useState<string | null>(null);
+  const [shipName, setShipName] = useState("");
 
   // Resolve ship ID on mount (handle both UUID and slug)
   useEffect(() => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (shipIdParam && uuidRegex.test(shipIdParam)) {
       setResolvedShipId(shipIdParam);
+      supabase.from("ships").select("name").eq("id", shipIdParam).maybeSingle()
+        .then(({ data }) => { if (data?.name) setShipName(data.name); });
     } else if (shipIdParam) {
-      supabase.from("ships").select("id").ilike("name", shipIdParam).limit(1).maybeSingle()
+      supabase.from("ships").select("id, name").ilike("name", shipIdParam).limit(1).maybeSingle()
         .then(({ data }) => {
-          if (data?.id) setResolvedShipId(data.id);
+          if (data?.id) { setResolvedShipId(data.id); setShipName(data.name); }
           else {
-            supabase.from("ships").select("id").limit(1).maybeSingle()
+            supabase.from("ships").select("id, name").limit(1).maybeSingle()
               .then(({ data: first }) => {
-                if (first?.id) setResolvedShipId(first.id);
+                if (first?.id) { setResolvedShipId(first.id); setShipName(first.name); }
               });
           }
         });
     } else {
-      // No shipId param - get first ship
-      supabase.from("ships").select("id").limit(1).maybeSingle()
+      supabase.from("ships").select("id, name").limit(1).maybeSingle()
         .then(({ data }) => {
-          if (data?.id) setResolvedShipId(data.id);
+          if (data?.id) { setResolvedShipId(data.id); setShipName(data.name); }
         });
     }
   }, [shipIdParam]);
@@ -119,7 +121,7 @@ const GuestFeedbackForm = () => {
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(22);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("GRAND ROSE CRUISE", margin, 18);
+      pdf.text(shipName || "Guest Feedback", margin, 18);
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(12);
       pdf.setTextColor(180, 200, 220);
@@ -298,7 +300,7 @@ const GuestFeedbackForm = () => {
         pdf.rect(0, h - 10, w, 10, "F");
         pdf.setFontSize(7);
         pdf.setTextColor(150, 150, 150);
-        pdf.text("Grand Rose Cruise - Confidential Guest Feedback", margin, h - 4);
+        pdf.text(`${shipName || "Guest Comment"} - Confidential Guest Feedback`, margin, h - 4);
         pdf.text(`Page ${p} of ${totalPages}`, w - margin, h - 4, { align: "right" });
       }
 

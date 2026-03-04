@@ -1,12 +1,28 @@
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Heart, Anchor } from "lucide-react";
 import { t } from "@/i18n/translations";
 import GuestLayout from "@/components/guest/GuestLayout";
+import { supabase } from "@/integrations/supabase/client";
 
 const GuestThankYou = () => {
   const [searchParams] = useSearchParams();
+  const { shipId } = useParams();
   const lang = searchParams.get("lang") || "en";
+  const [shipName, setShipName] = useState("");
+
+  useEffect(() => {
+    if (!shipId) return;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const fetch = async () => {
+      const { data } = uuidRegex.test(shipId)
+        ? await supabase.from("ships").select("name").eq("id", shipId).maybeSingle()
+        : await supabase.from("ships").select("name").ilike("name", shipId).maybeSingle();
+      if (data?.name) setShipName(data.name);
+    };
+    fetch();
+  }, [shipId]);
 
   return (
     <GuestLayout>
@@ -38,7 +54,7 @@ const GuestThankYou = () => {
           className="flex items-center justify-center gap-2 text-cruise-navy opacity-40"
         >
           <Anchor className="h-5 w-5" />
-          <span className="text-sm font-medium">Grand Rose Cruise</span>
+          <span className="text-sm font-medium">{shipName || "Guest Comment"}</span>
         </motion.div>
       </motion.div>
     </GuestLayout>
