@@ -161,7 +161,18 @@ const AdminDashboard = () => {
       });
 
       if (error) {
-        toast({ title: "AI Analysis Failed", description: error.message, variant: "destructive" });
+        const errorMsg = typeof error === "object" && "message" in error ? error.message : String(error);
+        const isCredits = errorMsg.includes("402") || errorMsg.includes("credits") || errorMsg.includes("payment");
+        const isRateLimit = errorMsg.includes("429") || errorMsg.includes("rate limit");
+        toast({
+          title: isCredits ? "AI Credits Exhausted" : isRateLimit ? "Rate Limited" : "AI Analysis Failed",
+          description: isCredits
+            ? "الرصيد خلص. روح Settings → Workspace → Usage وأضف رصيد."
+            : isRateLimit
+            ? "طلبات كتير. جرب تاني بعد دقيقة."
+            : errorMsg,
+          variant: "destructive",
+        });
         return;
       }
 
