@@ -12,6 +12,7 @@ import GuestThankYou from "./pages/GuestThankYou";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import SystemOwnerDashboard from "./pages/SystemOwnerDashboard";
+import UserManagement from "./pages/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/system" element={<SystemOwnerDashboard />} />
+          <Route path="/admin/users" element={<UserManagement />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
