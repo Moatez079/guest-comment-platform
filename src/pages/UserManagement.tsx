@@ -183,7 +183,7 @@ const UserManagement = () => {
   const pendingCount = users.filter((u) => u.status === "pending").length;
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-4 md:p-6">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-5xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Button variant="ghost" size="sm" onClick={() => navigate("/admin/system")} className="gap-1">
@@ -220,7 +220,7 @@ const UserManagement = () => {
               >
                 <Card className={`transition-all ${user.status === "pending" ? "border-amber-500/30 bg-amber-500/5" : ""}`}>
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold text-foreground truncate">{user.full_name || "No Name"}</h3>

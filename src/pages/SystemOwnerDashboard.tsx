@@ -4,6 +4,7 @@ import {
   MessageSquare, Ship, Plus, Trash2, Users, BarChart3, Globe,
   LogOut, Settings, ChevronRight, Loader2, FileText, Star
 } from "lucide-react";
+import MobileNav from "@/components/admin/MobileNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -143,8 +144,26 @@ const SystemOwnerDashboard = () => {
   const totalFeedback = ships.reduce((s, sh) => s + sh.feedbackCount, 0);
   const totalMembers = ships.reduce((s, sh) => s + sh.memberCount, 0);
 
+  const mobileNavItems = [
+    { icon: Ship, label: "Ships", onClick: () => {}, active: true },
+    { icon: Users, label: "User Management", onClick: () => navigate("/admin/users") },
+    { icon: BarChart3, label: "Ship Dashboard", onClick: () => navigate("/admin/dashboard") },
+  ];
+
+  const mobileBottomItems = [
+    { icon: LogOut, label: "Sign Out", onClick: handleLogout },
+  ];
+
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Mobile Nav */}
+      <MobileNav
+        brandIcon={MessageSquare}
+        brandName="Guest Comment"
+        brandSub="System Owner"
+        items={mobileNavItems}
+        bottomItems={mobileBottomItems}
+      />
       {/* Sidebar */}
       <aside className="w-64 bg-sidebar text-sidebar-foreground flex-col border-r border-sidebar-border hidden md:flex">
         <div className="p-5 border-b border-sidebar-border">
@@ -183,7 +202,7 @@ const SystemOwnerDashboard = () => {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-4 md:p-6 overflow-auto pt-20 md:pt-6">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="flex items-center justify-between mb-6">
             <div>
