@@ -10,6 +10,7 @@ import GuestLayout from "@/components/guest/GuestLayout";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { saveFeedbackOffline, syncPendingFeedback } from "@/lib/offlineQueue";
 
 type Ratings = Record<string, string | null>;
 
@@ -304,6 +305,32 @@ const GuestFeedbackForm = () => {
       const pdfBlob = pdf.output("blob");
       const pdfPath = `${resolvedShipId || "default"}/${timestamp}_room${room}.pdf`;
 
+      // Check if online
+      if (!navigator.onLine) {
+        // Save offline with PDF blob
+        const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+        await saveFeedbackOffline({
+          id: `offline_${timestamp}`,
+          ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
+          room_number: room,
+          language: lang,
+          ratings,
+          comments,
+          pdf_blob: pdfArrayBuffer,
+          pdf_path: pdfPath,
+          created_at: new Date().toISOString(),
+        });
+
+        toast({
+          title: "📱 Saved Offline",
+          description: "Your feedback has been saved and will be sent automatically when internet is available.",
+        });
+
+        navigate(`/ship/${shipIdParam || "default"}/thankyou?lang=${lang}`);
+        return;
+      }
+
+      // Online: upload PDF and save to DB
       const { error: pdfErr } = await supabase.storage
         .from("feedback-files")
         .upload(pdfPath, pdfBlob, { contentType: "application/pdf" });
@@ -325,23 +352,57 @@ const GuestFeedbackForm = () => {
 
       if (dbErr) {
         console.error("DB error:", dbErr);
-        toast({
-          title: "Error",
-          description: "Failed to save feedback. Please try again.",
-          variant: "destructive",
+        // Fallback to offline storage
+        const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+        await saveFeedbackOffline({
+          id: `offline_${timestamp}`,
+          ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
+          room_number: room,
+          language: lang,
+          ratings,
+          comments,
+          pdf_blob: pdfArrayBuffer,
+          pdf_path: pdfPath,
+          created_at: new Date().toISOString(),
         });
-        setSubmitting(false);
+        toast({
+          title: "📱 Saved Offline",
+          description: "Could not reach server. Feedback saved locally and will sync when online.",
+        });
+        navigate(`/ship/${shipIdParam || "default"}/thankyou?lang=${lang}`);
         return;
       }
+
+      // Try to sync any previously saved offline feedback
+      syncPendingFeedback().catch(() => {});
 
       navigate(`/ship/${shipIdParam || "default"}/thankyou?lang=${lang}`);
     } catch (err) {
       console.error("Error submitting feedback:", err);
-      toast({
-        title: "Error",
-        description: "Failed to submit feedback. Please try again.",
-        variant: "destructive",
-      });
+      // Last resort: try to save offline
+      try {
+        await saveFeedbackOffline({
+          id: `offline_${Date.now()}`,
+          ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
+          room_number: room,
+          language: lang,
+          ratings,
+          comments,
+          created_at: new Date().toISOString(),
+        });
+        toast({
+          title: "📱 Saved Offline",
+          description: "Feedback saved locally. It will be sent when internet is available.",
+        });
+        navigate(`/ship/${shipIdParam || "default"}/thankyou?lang=${lang}`);
+        return;
+      } catch {
+        toast({
+          title: "Error",
+          description: "Failed to submit feedback. Please try again.",
+          variant: "destructive",
+        });
+      }
       setSubmitting(false);
     }
   };
