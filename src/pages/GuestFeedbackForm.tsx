@@ -221,7 +221,7 @@ const GuestFeedbackForm = () => {
       // ---- SERVICES ----
       y = drawSectionTitle("SERVICES", y);
       servicesItems.forEach((item, i) => {
-        y = drawRatingRow(t(lang, item), `services_${item}`, y, i % 2 === 0);
+        y = drawRatingRow(t("en", item), `services_${item}`, y, i % 2 === 0);
       });
       y = drawCommentBox(comments.services, y);
       y += 4;
@@ -229,7 +229,7 @@ const GuestFeedbackForm = () => {
       // ---- FACILITIES ----
       y = drawSectionTitle("FACILITIES", y);
       facilitiesItems.forEach((item, i) => {
-        y = drawRatingRow(t(lang, item), `facilities_${item}`, y, i % 2 === 0);
+        y = drawRatingRow(t("en", item), `facilities_${item}`, y, i % 2 === 0);
       });
       y = drawCommentBox(comments.facilities, y);
       y += 4;
@@ -237,7 +237,7 @@ const GuestFeedbackForm = () => {
       // ---- FOOD & DINING ----
       y = drawSectionTitle("FOOD & DINING", y);
       foodItems.forEach((item, i) => {
-        y = drawRatingRow(t(lang, item), `food_${item}`, y, i % 2 === 0);
+        y = drawRatingRow(t("en", item), `food_${item}`, y, i % 2 === 0);
       });
       y = drawCommentBox(comments.food, y);
 
