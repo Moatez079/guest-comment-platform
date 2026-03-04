@@ -163,6 +163,12 @@ const SystemOwnerDashboard = () => {
             <Ship className="h-4 w-4" /> Ships
           </button>
           <button
+            onClick={() => navigate("/admin/users")}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+          >
+            <Users className="h-4 w-4" /> User Management
+          </button>
+          <button
             onClick={() => navigate("/admin/dashboard")}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
           >

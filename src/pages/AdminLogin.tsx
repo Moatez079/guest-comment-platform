@@ -49,15 +49,34 @@ const AdminLogin = () => {
         return;
       }
 
-      // Check role and redirect accordingly
+      // Check role and approval status
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Check profile approval status
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("status")
+          .eq("user_id", user.id)
+          .single();
+
         const { data: roles } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id);
 
         const isSystemOwner = roles?.some((r) => r.role === "system_owner");
+
+        // System owners bypass approval check
+        if (!isSystemOwner && profile?.status !== "approved") {
+          await supabase.auth.signOut();
+          if (profile?.status === "pending") {
+            toast({ title: "⏳ Pending Approval", description: "Your account is awaiting admin approval. Please try again later.", variant: "destructive" });
+          } else if (profile?.status === "suspended") {
+            toast({ title: "⛔ Account Suspended", description: "Your account has been suspended. Contact the administrator.", variant: "destructive" });
+          }
+          return;
+        }
+
         if (isSystemOwner) {
           navigate("/admin/system");
         } else {
