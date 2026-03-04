@@ -228,7 +228,64 @@ const AdminDashboard = () => {
     }
   };
 
-  const downloadReportPdf = () => {
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+
+  const downloadReportPdf = async () => {
+    if (!aiReport) return;
+    setPdfGenerating(true);
+    toast({ title: "Generating Presentation...", description: "AI is creating slide images. This may take a minute." });
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-report-slides", {
+        body: { report: aiReport, ship_name: shipName },
+      });
+
+      if (error || data?.error) {
+        // Fallback to text-based PDF
+        toast({ title: "Slide generation failed", description: "Falling back to text PDF.", variant: "destructive" });
+        downloadTextPdf();
+        return;
+      }
+
+      const slides: string[] = data.slides;
+      if (!slides || slides.length === 0) {
+        toast({ title: "No slides generated", description: "Falling back to text PDF.", variant: "destructive" });
+        downloadTextPdf();
+        return;
+      }
+
+      // Create landscape PDF with slide images
+      const pdf = new jsPDF("l", "mm", [338.67, 190.5]); // 16:9 ratio
+      const pageW = 338.67;
+      const pageH = 190.5;
+
+      for (let i = 0; i < slides.length; i++) {
+        if (i > 0) pdf.addPage();
+        try {
+          pdf.addImage(`data:image/png;base64,${slides[i]}`, "PNG", 0, 0, pageW, pageH);
+        } catch (imgErr) {
+          console.error("Failed to add slide image:", imgErr);
+          // Add a placeholder page
+          pdf.setFillColor(20, 40, 80);
+          pdf.rect(0, 0, pageW, pageH, "F");
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(24);
+          pdf.text(`Slide ${i + 1} - Image could not be loaded`, pageW / 2, pageH / 2, { align: "center" });
+        }
+      }
+
+      pdf.save(`GuestComment_Presentation_${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast({ title: "Presentation Downloaded!", description: `${slides.length} slides saved as PDF.` });
+    } catch (err: any) {
+      console.error("PDF generation error:", err);
+      toast({ title: "Error", description: "Falling back to text PDF.", variant: "destructive" });
+      downloadTextPdf();
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
+  const downloadTextPdf = () => {
     if (!aiReport) return;
     const pdf = new jsPDF("p", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();
@@ -251,7 +308,6 @@ const AdminDashboard = () => {
       return yPos + lines.length * (size * 0.5) + 4;
     };
 
-    // Title
     pdf.setFontSize(20);
     pdf.setTextColor(30, 64, 110);
     pdf.text("Guest Comment", 10, y);
@@ -265,47 +321,24 @@ const AdminDashboard = () => {
     pdf.text(`Generated: ${new Date(aiReport.generated_at).toLocaleString()} | Total Responses: ${aiReport.total_responses}`, 10, y);
     y += 10;
 
-    // Executive Summary
     y = addSection("Executive Summary", y);
     y = addText(aiReport.executive_summary, y);
     y += 4;
-
-    // Overall Rating
     y = addSection(`Overall Average Rating: ${aiReport.average_ratings.overall_average}%`, y);
     y += 4;
-
-    // Top Performing
     y = addSection("Top Performing Areas", y);
-    aiReport.top_performing.forEach((item) => {
-      y = addText(`✅ ${item.area}: ${item.score}% — ${item.note}`, y);
-    });
+    aiReport.top_performing.forEach((item) => { y = addText(`✅ ${item.area}: ${item.score}% — ${item.note}`, y); });
     y += 2;
-
-    // Needs Improvement
     y = addSection("Areas Needing Improvement", y);
-    aiReport.needs_improvement.forEach((item) => {
-      y = addText(`⚠️ ${item.area}: ${item.score}% [${item.impact}] — ${item.suggestion}`, y);
-    });
+    aiReport.needs_improvement.forEach((item) => { y = addText(`⚠️ ${item.area}: ${item.score}% [${item.impact}] — ${item.suggestion}`, y); });
     y += 2;
-
-    // Recurring Issues
     y = addSection("Recurring Issues", y);
-    aiReport.recurring_issues.forEach((item) => {
-      y = addText(`• ${item.issue} (${item.frequency}) — ${item.affected_area}`, y);
-    });
+    aiReport.recurring_issues.forEach((item) => { y = addText(`• ${item.issue} (${item.frequency}) — ${item.affected_area}`, y); });
     y += 2;
-
-    // Sentiment
     y = addSection(`Sentiment Analysis: ${aiReport.sentiment_analysis.overall.replace("_", " ")}`, y);
-    if (aiReport.sentiment_analysis.positive_highlights.length > 0) {
-      y = addText("Positive: " + aiReport.sentiment_analysis.positive_highlights.join(", "), y);
-    }
-    if (aiReport.sentiment_analysis.negative_highlights.length > 0) {
-      y = addText("Negative: " + aiReport.sentiment_analysis.negative_highlights.join(", "), y);
-    }
+    if (aiReport.sentiment_analysis.positive_highlights.length > 0) { y = addText("Positive: " + aiReport.sentiment_analysis.positive_highlights.join(", "), y); }
+    if (aiReport.sentiment_analysis.negative_highlights.length > 0) { y = addText("Negative: " + aiReport.sentiment_analysis.negative_highlights.join(", "), y); }
     y += 2;
-
-    // Recommendations
     y = addSection("Recommendations", y);
     aiReport.recommendations.forEach((rec, i) => {
       y = addText(`${i + 1}. [${rec.priority.toUpperCase()}] ${rec.title}: ${rec.description}`, y);
@@ -538,8 +571,9 @@ const AdminDashboard = () => {
                     {aiLoading ? "Analyzing..." : "Regenerate Report"}
                   </Button>
                   {aiReport && (
-                    <Button variant="outline" size="sm" className="gap-2" onClick={downloadReportPdf}>
-                      <Download className="h-4 w-4" /> Download PDF
+                    <Button variant="outline" size="sm" className="gap-2" onClick={downloadReportPdf} disabled={pdfGenerating}>
+                      {pdfGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                      {pdfGenerating ? "Generating Slides..." : "Download Presentation"}
                     </Button>
                   )}
                 </div>
