@@ -96,6 +96,7 @@ async function generateSlideImage(
             content: prompt,
           },
         ],
+        modalities: ["image", "text"],
       }),
     });
 
@@ -106,36 +107,13 @@ async function generateSlideImage(
 
     const data = await response.json();
     
-    // Extract image from response - the model returns inline_data with base64
-    const content = data.choices?.[0]?.message?.content;
-    
-    // Check for parts with inline images
-    const parts = data.choices?.[0]?.message?.parts;
-    if (parts) {
-      for (const part of parts) {
-        if (part.inline_data?.data) {
-          return part.inline_data.data;
-        }
-      }
-    }
-    
-    // Some responses may have the image in a different format
-    if (typeof content === "string" && content.startsWith("data:image")) {
-      return content.split(",")[1];
-    }
-    
-    // Try to extract from content array
-    if (Array.isArray(content)) {
-      for (const item of content) {
-        if (item.type === "image_url" && item.image_url?.url) {
-          const url = item.image_url.url;
-          if (url.startsWith("data:image")) {
-            return url.split(",")[1];
-          }
-        }
-        if (item.inline_data?.data) {
-          return item.inline_data.data;
-        }
+    // Extract image from response - images array in message
+    const msg = data.choices?.[0]?.message;
+    const images = msg?.images;
+    if (images && images.length > 0) {
+      const imgUrl = images[0]?.image_url?.url;
+      if (imgUrl && imgUrl.startsWith("data:image")) {
+        return imgUrl.split(",")[1];
       }
     }
 
@@ -171,21 +149,10 @@ serve(async (req) => {
 
     const prompts = buildSlidePrompts(report, ship_name || "");
     
-    // Generate slides in parallel (batches of 3 to avoid rate limits)
-    const slides: (string | null)[] = [];
-    
-    for (let i = 0; i < prompts.length; i += 3) {
-      const batch = prompts.slice(i, i + 3);
-      const results = await Promise.all(
-        batch.map((prompt) => generateSlideImage(prompt, LOVABLE_API_KEY))
-      );
-      slides.push(...results);
-      
-      // Small delay between batches to avoid rate limits
-      if (i + 3 < prompts.length) {
-        await new Promise((r) => setTimeout(r, 1000));
-      }
-    }
+    // Generate all slides in parallel for speed
+    const slides = await Promise.all(
+      prompts.map((prompt) => generateSlideImage(prompt, LOVABLE_API_KEY))
+    );
 
     const validSlides = slides.filter(Boolean);
 
