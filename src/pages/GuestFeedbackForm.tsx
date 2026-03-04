@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Ship, Utensils, Building2, MessageSquare } from "lucide-react";
@@ -15,12 +15,38 @@ type Ratings = Record<string, string | null>;
 
 const GuestFeedbackForm = () => {
   const navigate = useNavigate();
-  const { shipId } = useParams();
+  const { shipId: shipIdParam } = useParams();
   const [searchParams] = useSearchParams();
   const lang = searchParams.get("lang") || "en";
   const room = searchParams.get("room") || "";
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [resolvedShipId, setResolvedShipId] = useState<string | null>(null);
+
+  // Resolve ship ID on mount (handle both UUID and slug)
+  useEffect(() => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (shipIdParam && uuidRegex.test(shipIdParam)) {
+      setResolvedShipId(shipIdParam);
+    } else if (shipIdParam) {
+      supabase.from("ships").select("id").ilike("name", shipIdParam).limit(1).maybeSingle()
+        .then(({ data }) => {
+          if (data?.id) setResolvedShipId(data.id);
+          else {
+            supabase.from("ships").select("id").limit(1).maybeSingle()
+              .then(({ data: first }) => {
+                if (first?.id) setResolvedShipId(first.id);
+              });
+          }
+        });
+    } else {
+      // No shipId param - get first ship
+      supabase.from("ships").select("id").limit(1).maybeSingle()
+        .then(({ data }) => {
+          if (data?.id) setResolvedShipId(data.id);
+        });
+    }
+  }, [shipIdParam]);
 
   const [ratings, setRatings] = useState<Ratings>({});
   const [comments, setComments] = useState({
@@ -276,7 +302,7 @@ const GuestFeedbackForm = () => {
       }
 
       const pdfBlob = pdf.output("blob");
-      const pdfPath = `${shipId || "default"}/${timestamp}_room${room}.pdf`;
+      const pdfPath = `${resolvedShipId || "default"}/${timestamp}_room${room}.pdf`;
 
       const { error: pdfErr } = await supabase.storage
         .from("feedback-files")
@@ -288,7 +314,7 @@ const GuestFeedbackForm = () => {
 
       // Save feedback to database
       const { error: dbErr } = await supabase.from("feedback").insert({
-        ship_id: shipId || "00000000-0000-0000-0000-000000000000",
+        ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
         room_number: room,
         language: lang,
         ratings: ratings as any,
@@ -308,7 +334,7 @@ const GuestFeedbackForm = () => {
         return;
       }
 
-      navigate(`/ship/${shipId || "default"}/thankyou?lang=${lang}`);
+      navigate(`/ship/${shipIdParam || "default"}/thankyou?lang=${lang}`);
     } catch (err) {
       console.error("Error submitting feedback:", err);
       toast({
