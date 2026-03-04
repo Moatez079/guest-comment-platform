@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Anchor, BarChart3, FileText, Users, Settings, LogOut,
   Download, Trash2, Brain, TrendingUp, MessageSquare, Star, Ship,
-  RefreshCw, ChevronRight, AlertTriangle, ThumbsUp, Globe, Loader2, X
+  RefreshCw, ChevronRight, AlertTriangle, ThumbsUp, Globe, Loader2, X, QrCode
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
+import ShipQRCode from "@/components/admin/ShipQRCode";
 
 type AnalysisReport = {
   executive_summary: string;
@@ -49,6 +50,7 @@ type FeedbackRow = {
 
 const sidebarItems = [
   { icon: BarChart3, label: "Dashboard" },
+  { icon: QrCode, label: "QR Code" },
   { icon: FileText, label: "Feedback PDFs" },
   { icon: Brain, label: "AI Analytics" },
   { icon: Users, label: "Users" },
@@ -680,6 +682,16 @@ const AdminDashboard = () => {
                   ))}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {activeTab === "QR Code" && shipId && (
+            <motion.div key="qr" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="mb-6">
+                <h1 className="text-2xl font-display font-bold text-foreground">QR Code</h1>
+                <p className="text-sm text-muted-foreground">Generate and share QR codes for guest feedback.</p>
+              </div>
+              <ShipQRCode shipId={shipId} />
             </motion.div>
           )}
 
