@@ -57,6 +57,18 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        cruise: {
+          navy: "hsl(var(--cruise-navy))",
+          gold: "hsl(var(--cruise-gold))",
+          sky: "hsl(var(--cruise-sky))",
+          ocean: "hsl(var(--cruise-ocean))",
+          sand: "hsl(var(--cruise-sand))",
+          rose: "hsl(var(--cruise-rose))",
+          excellent: "hsl(var(--cruise-excellent))",
+          verygood: "hsl(var(--cruise-verygood))",
+          good: "hsl(var(--cruise-good))",
+          fair: "hsl(var(--cruise-fair))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -65,25 +77,22 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "wave": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "wave": "wave 3s ease-in-out infinite",
       },
     },
   },
