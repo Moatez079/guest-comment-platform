@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import ShipQRCode from "@/components/admin/ShipQRCode";
 import DashboardCharts from "@/components/admin/DashboardCharts";
+import MobileNav from "@/components/admin/MobileNav";
 
 type AnalysisReport = {
   executive_summary: string;
@@ -340,8 +341,28 @@ const AdminDashboard = () => {
     { label: "PDFs Available", value: String(feedbackList.filter((f) => f.pdf_url).length), icon: FileText, change: "Ready to download" },
   ];
 
+  const mobileNavItems = sidebarItems.map((item) => ({
+    icon: item.icon,
+    label: item.label,
+    onClick: () => setActiveTab(item.label),
+    active: activeTab === item.label,
+  }));
+
+  const mobileBottomItems = [
+    ...(isSystemOwner ? [{ icon: Ship, label: "Fleet Management", onClick: () => navigate("/admin/system") }] : []),
+    { icon: LogOut, label: "Sign Out", onClick: handleLogout },
+  ];
+
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Mobile Nav */}
+      <MobileNav
+        brandIcon={MessageSquare}
+        brandName="Guest Comment"
+        brandSub="Admin Portal"
+        items={mobileNavItems}
+        bottomItems={mobileBottomItems}
+      />
       {/* Sidebar */}
       <aside className="w-64 bg-sidebar text-sidebar-foreground flex-col border-r border-sidebar-border hidden md:flex">
         <div className="p-5 border-b border-sidebar-border">
@@ -389,7 +410,7 @@ const AdminDashboard = () => {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-4 md:p-6 overflow-auto pt-20 md:pt-6">
         <AnimatePresence mode="wait">
           {activeTab === "Dashboard" && (
             <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

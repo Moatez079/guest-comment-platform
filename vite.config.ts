@@ -34,13 +34,13 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: "Grand Rose Cruise Feedback",
-        short_name: "GRC Feedback",
-        description: "Guest feedback system for Grand Rose Cruise",
+        name: "Guest Comment - Feedback Platform",
+        short_name: "Guest Comment",
+        description: "AI-powered guest feedback management platform",
         theme_color: "#19375F",
         background_color: "#F0F4F8",
         display: "standalone",
-        orientation: "portrait",
+        orientation: "any",
         start_url: "/",
         icons: [
           {
