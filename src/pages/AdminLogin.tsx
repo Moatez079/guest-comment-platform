@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -22,12 +23,14 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      // TODO: Supabase auth integration
-      // For now, navigate to dashboard
-      toast({ title: "Login functionality", description: "Auth will be connected to Lovable Cloud." });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast({ title: "Login failed", description: error.message, variant: "destructive" });
+        return;
+      }
       navigate("/admin/dashboard");
     } catch (err) {
-      toast({ title: "Login failed", description: "Invalid credentials.", variant: "destructive" });
+      toast({ title: "Login failed", description: "An unexpected error occurred.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
