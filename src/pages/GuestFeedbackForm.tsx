@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Ship, Utensils, Building2, MessageSquare } from "lucide-react";
@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { t } from "@/i18n/translations";
 import RatingSelector from "@/components/guest/RatingSelector";
 import GuestLayout from "@/components/guest/GuestLayout";
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +19,6 @@ const GuestFeedbackForm = () => {
   const [searchParams] = useSearchParams();
   const lang = searchParams.get("lang") || "en";
   const room = searchParams.get("room") || "";
-  const formRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
@@ -54,53 +52,114 @@ const GuestFeedbackForm = () => {
     try {
       let pdfUrl: string | null = null;
       let imageUrl: string | null = null;
+      const timestamp = Date.now();
 
-      // Capture form as image and PDF
-      if (formRef.current) {
-        const canvas = await html2canvas(formRef.current, {
-          scale: 2,
-          backgroundColor: "#ffffff",
-          useCORS: true,
-        });
+      // Generate clean text-based PDF
+      const pdf = new jsPDF("p", "mm", "a4");
+      const w = pdf.internal.pageSize.getWidth();
+      let y = 15;
 
-        // Upload JPG image
-        const imgBlob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.95);
-        });
+      const addLine = (text: string, yPos: number, size = 10, color: [number, number, number] = [50, 50, 50]) => {
+        if (yPos > 275) { pdf.addPage(); yPos = 15; }
+        pdf.setFontSize(size);
+        pdf.setTextColor(...color);
+        const lines = pdf.splitTextToSize(text, w - 20);
+        pdf.text(lines, 10, yPos);
+        return yPos + lines.length * (size * 0.45) + 3;
+      };
 
-        const timestamp = Date.now();
-        const imgPath = `${shipId || "default"}/${timestamp}_room${room}.jpg`;
-        
-        const { error: imgErr } = await supabase.storage
-          .from("feedback-files")
-          .upload(imgPath, imgBlob, { contentType: "image/jpeg" });
+      // Header
+      pdf.setFillColor(30, 64, 110);
+      pdf.rect(0, 0, w, 30, "F");
+      pdf.setFontSize(18);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("Grand Rose Cruise", 10, 13);
+      pdf.setFontSize(11);
+      pdf.text("Guest Feedback Form", 10, 20);
+      pdf.setFontSize(9);
+      pdf.setTextColor(200, 200, 220);
+      pdf.text(`Room: ${room}  |  Date: ${new Date().toLocaleDateString()}  |  Language: ${lang.toUpperCase()}`, 10, 27);
+      y = 38;
 
-        if (!imgErr) {
-          imageUrl = imgPath;
-        }
+      const ratingDisplay: Record<string, string> = {
+        excellent: "Excellent",
+        veryGood: "Very Good",
+        good: "Good",
+        fair: "Fair",
+      };
 
-        // Create PDF with image
-        const pdf = new jsPDF("p", "mm", "a4");
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      // Services section
+      y = addLine("SERVICES", y, 13, [30, 64, 110]);
+      pdf.setDrawColor(180, 140, 60);
+      pdf.setLineWidth(0.5);
+      pdf.line(10, y - 1, 60, y - 1);
+      y += 2;
+      servicesItems.forEach((item) => {
+        const val = ratings[`services_${item}`];
+        const label = t(lang, item);
+        y = addLine(`${label}:  ${val ? ratingDisplay[val] || val : "Not rated"}`, y, 10);
+      });
+      if (comments.services) {
+        y = addLine(`Comments: ${comments.services}`, y, 9, [100, 100, 100]);
+      }
+      y += 4;
 
-        pdf.setFontSize(16);
-        pdf.text("Grand Rose Cruise - Guest Feedback", 10, 15);
-        pdf.setFontSize(10);
-        pdf.text(`Room: ${room} | Date: ${new Date().toLocaleDateString()} | Lang: ${lang}`, 10, 22);
-        pdf.addImage(imgData, "JPEG", 5, 28, pdfWidth - 10, Math.min(pdfHeight - 10, 250));
+      // Facilities section
+      y = addLine("FACILITIES", y, 13, [30, 64, 110]);
+      pdf.setDrawColor(180, 140, 60);
+      pdf.line(10, y - 1, 65, y - 1);
+      y += 2;
+      facilitiesItems.forEach((item) => {
+        const val = ratings[`facilities_${item}`];
+        const label = t(lang, item);
+        y = addLine(`${label}:  ${val ? ratingDisplay[val] || val : "Not rated"}`, y, 10);
+      });
+      if (comments.facilities) {
+        y = addLine(`Comments: ${comments.facilities}`, y, 9, [100, 100, 100]);
+      }
+      y += 4;
 
-        const pdfBlob = pdf.output("blob");
-        const pdfPath = `${shipId || "default"}/${timestamp}_room${room}.pdf`;
+      // Food section
+      y = addLine("FOOD & DINING", y, 13, [30, 64, 110]);
+      pdf.setDrawColor(180, 140, 60);
+      pdf.line(10, y - 1, 70, y - 1);
+      y += 2;
+      foodItems.forEach((item) => {
+        const val = ratings[`food_${item}`];
+        const label = t(lang, item);
+        y = addLine(`${label}:  ${val ? ratingDisplay[val] || val : "Not rated"}`, y, 10);
+      });
+      if (comments.food) {
+        y = addLine(`Comments: ${comments.food}`, y, 9, [100, 100, 100]);
+      }
+      y += 4;
 
-        const { error: pdfErr } = await supabase.storage
-          .from("feedback-files")
-          .upload(pdfPath, pdfBlob, { contentType: "application/pdf" });
+      // General comments
+      if (comments.general) {
+        y = addLine("GENERAL COMMENTS", y, 13, [30, 64, 110]);
+        pdf.setDrawColor(180, 140, 60);
+        pdf.line(10, y - 1, 80, y - 1);
+        y += 2;
+        y = addLine(comments.general, y, 10, [50, 50, 50]);
+      }
 
-        if (!pdfErr) {
-          pdfUrl = pdfPath;
-        }
+      // Footer
+      const pageH = pdf.internal.pageSize.getHeight();
+      pdf.setFillColor(240, 240, 240);
+      pdf.rect(0, pageH - 12, w, 12, "F");
+      pdf.setFontSize(7);
+      pdf.setTextColor(130, 130, 130);
+      pdf.text(`Generated by Grand Rose Cruise Feedback System  |  ${new Date().toISOString()}`, 10, pageH - 5);
+
+      const pdfBlob = pdf.output("blob");
+      const pdfPath = `${shipId || "default"}/${timestamp}_room${room}.pdf`;
+
+      const { error: pdfErr } = await supabase.storage
+        .from("feedback-files")
+        .upload(pdfPath, pdfBlob, { contentType: "application/pdf" });
+
+      if (!pdfErr) {
+        pdfUrl = pdfPath;
       }
 
       // Save feedback to database
@@ -171,7 +230,7 @@ const GuestFeedbackForm = () => {
           </div>
         </div>
 
-        <div ref={formRef} className="bg-card rounded-2xl shadow-lg border border-border p-5">
+        <div className="bg-card rounded-2xl shadow-lg border border-border p-5">
           <h2 className="font-display text-xl font-bold text-center text-foreground mb-1">
             {t(lang, "guestFeedback")}
           </h2>

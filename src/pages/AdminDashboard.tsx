@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import ShipQRCode from "@/components/admin/ShipQRCode";
+import DashboardCharts from "@/components/admin/DashboardCharts";
 
 type AnalysisReport = {
   executive_summary: string;
@@ -492,6 +493,9 @@ const AdminDashboard = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Charts */}
+              <DashboardCharts feedbackList={feedbackList} />
             </motion.div>
           )}
 
