@@ -14,16 +14,195 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      feedback: {
+        Row: {
+          comments: Json
+          id: string
+          image_url: string | null
+          language: string
+          pdf_url: string | null
+          ratings: Json
+          room_number: string
+          ship_id: string
+          submitted_at: string
+        }
+        Insert: {
+          comments?: Json
+          id?: string
+          image_url?: string | null
+          language?: string
+          pdf_url?: string | null
+          ratings?: Json
+          room_number: string
+          ship_id: string
+          submitted_at?: string
+        }
+        Update: {
+          comments?: Json
+          id?: string
+          image_url?: string | null
+          language?: string
+          pdf_url?: string | null
+          ratings?: Json
+          room_number?: string
+          ship_id?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_ship_id_fkey"
+            columns: ["ship_id"]
+            isOneToOne: false
+            referencedRelation: "ships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ship_members: {
+        Row: {
+          created_at: string
+          id: string
+          ship_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ship_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ship_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ship_members_ship_id_fkey"
+            columns: ["ship_id"]
+            isOneToOne: false
+            referencedRelation: "ships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ships: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          ship_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          ship_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          ship_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_ship_id_fkey"
+            columns: ["ship_id"]
+            isOneToOne: false
+            referencedRelation: "ships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_ship_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _ship_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_ship_member: {
+        Args: { _ship_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "system_owner" | "ship_owner" | "manager" | "reception"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +329,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["system_owner", "ship_owner", "manager", "reception"],
+    },
   },
 } as const

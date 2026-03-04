@@ -10,6 +10,7 @@ import GuestLayout from "@/components/guest/GuestLayout";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 type Ratings = Record<string, string | null>;
 
@@ -51,6 +52,9 @@ const GuestFeedbackForm = () => {
     setSubmitting(true);
 
     try {
+      let pdfUrl: string | null = null;
+      let imageUrl: string | null = null;
+
       // Capture form as image and PDF
       if (formRef.current) {
         const canvas = await html2canvas(formRef.current, {
@@ -59,35 +63,66 @@ const GuestFeedbackForm = () => {
           useCORS: true,
         });
 
-        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        // Upload JPG image
+        const imgBlob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.95);
+        });
+
+        const timestamp = Date.now();
+        const imgPath = `${shipId || "default"}/${timestamp}_room${room}.jpg`;
+        
+        const { error: imgErr } = await supabase.storage
+          .from("feedback-files")
+          .upload(imgPath, imgBlob, { contentType: "image/jpeg" });
+
+        if (!imgErr) {
+          imageUrl = imgPath;
+        }
+
+        // Create PDF with image
         const pdf = new jsPDF("p", "mm", "a4");
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-        // Add header to PDF
         pdf.setFontSize(16);
         pdf.text("Grand Rose Cruise - Guest Feedback", 10, 15);
         pdf.setFontSize(10);
-        pdf.text(`Room: ${room} | Date: ${new Date().toLocaleDateString()}`, 10, 22);
-        pdf.addImage(imgData, "JPEG", 5, 28, pdfWidth - 10, pdfHeight - 10);
+        pdf.text(`Room: ${room} | Date: ${new Date().toLocaleDateString()} | Lang: ${lang}`, 10, 22);
+        pdf.addImage(imgData, "JPEG", 5, 28, pdfWidth - 10, Math.min(pdfHeight - 10, 250));
 
-        // For now store locally - later will upload to Supabase storage
         const pdfBlob = pdf.output("blob");
-        
-        // Store feedback data
-        const feedbackData = {
-          ship_id: shipId || "default",
-          room_number: room,
-          language: lang,
-          ratings,
-          comments,
-          submitted_at: new Date().toISOString(),
-        };
+        const pdfPath = `${shipId || "default"}/${timestamp}_room${room}.pdf`;
 
-        console.log("Feedback submitted:", feedbackData);
-        console.log("PDF size:", pdfBlob.size);
+        const { error: pdfErr } = await supabase.storage
+          .from("feedback-files")
+          .upload(pdfPath, pdfBlob, { contentType: "application/pdf" });
 
-        // TODO: Upload to Supabase when connected
+        if (!pdfErr) {
+          pdfUrl = pdfPath;
+        }
+      }
+
+      // Save feedback to database
+      const { error: dbErr } = await supabase.from("feedback").insert({
+        ship_id: shipId || "00000000-0000-0000-0000-000000000000",
+        room_number: room,
+        language: lang,
+        ratings: ratings as any,
+        comments: comments as any,
+        pdf_url: pdfUrl,
+        image_url: imageUrl,
+      });
+
+      if (dbErr) {
+        console.error("DB error:", dbErr);
+        toast({
+          title: "Error",
+          description: "Failed to save feedback. Please try again.",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
       }
 
       navigate(`/ship/${shipId || "default"}/thankyou?lang=${lang}`);
