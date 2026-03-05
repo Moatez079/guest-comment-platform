@@ -14,6 +14,7 @@ import jsPDF from "jspdf";
 import ShipQRCode from "@/components/admin/ShipQRCode";
 import DashboardCharts from "@/components/admin/DashboardCharts";
 import MobileNav from "@/components/admin/MobileNav";
+import { generateLocalAnalysis } from "@/lib/localAnalysis";
 
 type AnalysisReport = {
   executive_summary: string;
@@ -149,42 +150,22 @@ const AdminDashboard = () => {
     navigate("/admin/login");
   };
 
-  const generateAiReport = async () => {
+  const generateAiReport = () => {
     if (!shipId) {
       toast({ title: "No ship found", description: "Create a ship first.", variant: "destructive" });
       return;
     }
+    if (feedbackList.length === 0) {
+      toast({ title: "No feedback", description: "No feedback data to analyze.", variant: "destructive" });
+      return;
+    }
     setAiLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("analyze-feedback", {
-        body: { ship_id: shipId },
-      });
-
-      if (error) {
-        const errorMsg = typeof error === "object" && "message" in error ? error.message : String(error);
-        const isCredits = errorMsg.includes("402") || errorMsg.includes("credits") || errorMsg.includes("payment");
-        const isRateLimit = errorMsg.includes("429") || errorMsg.includes("rate limit");
-        toast({
-          title: isCredits ? "AI Credits Exhausted" : isRateLimit ? "Rate Limited" : "AI Analysis Failed",
-          description: isCredits
-            ? "الرصيد خلص. روح Settings → Workspace → Usage وأضف رصيد."
-            : isRateLimit
-            ? "طلبات كتير. جرب تاني بعد دقيقة."
-            : errorMsg,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data?.error) {
-        toast({ title: "Analysis Error", description: data.error, variant: "destructive" });
-        return;
-      }
-
-      setAiReport(data as AnalysisReport);
+      const report = generateLocalAnalysis(feedbackList);
+      setAiReport(report as AnalysisReport);
       setShowReport(true);
       setActiveTab("AI Analytics");
-      toast({ title: "AI Report Generated!", description: "Your analysis is ready." });
+      toast({ title: "Report Generated!", description: "Your analysis is ready — instant & free." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to generate report", variant: "destructive" });
     } finally {
