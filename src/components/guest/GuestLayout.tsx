@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Anchor } from "lucide-react";
+import { Anchor, Loader2 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,38 +13,58 @@ interface GuestLayoutProps {
 const GuestLayout = ({ children, showBranding = true, shipName: propShipName }: GuestLayoutProps) => {
   const { shipId } = useParams();
   const [shipName, setShipName] = useState(propShipName || "");
+  const [loading, setLoading] = useState(!propShipName && !!shipId);
 
   useEffect(() => {
     if (propShipName) return;
     if (!shipId) return;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const fetchName = async () => {
-      let query;
-      if (uuidRegex.test(shipId)) {
-        query = supabase.from("ships").select("name").eq("id", shipId).maybeSingle();
-      } else {
-        query = supabase.from("ships").select("name").ilike("name", shipId).maybeSingle();
+      try {
+        let query;
+        if (uuidRegex.test(shipId)) {
+          query = supabase.from("ships").select("name").eq("id", shipId).maybeSingle();
+        } else {
+          query = supabase.from("ships").select("name").ilike("name", shipId).maybeSingle();
+        }
+        const { data } = await query;
+        if (data?.name) setShipName(data.name);
+      } catch {
+        // Ship name is cosmetic, don't block rendering
+      } finally {
+        setLoading(false);
       }
-      const { data } = await query;
-      if (data?.name) setShipName(data.name);
     };
     fetchName();
   }, [shipId, propShipName]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-cruise-sky via-background to-cruise-sand flex flex-col">
-      {showBranding && shipName && (
+      {showBranding && (
         <motion.header
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="pt-6 pb-2 text-center"
         >
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Anchor className="h-6 w-6 text-cruise-navy" />
-            <h1 className="text-xl font-display font-bold text-cruise-navy tracking-wide">
-              {shipName}
-            </h1>
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 mb-1 h-8">
+              <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+            </div>
+          ) : shipName ? (
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Anchor className="h-6 w-6 text-cruise-navy" />
+              <h1 className="text-xl font-display font-bold text-cruise-navy tracking-wide">
+                {shipName}
+              </h1>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <Anchor className="h-6 w-6 text-cruise-navy" />
+              <h1 className="text-xl font-display font-bold text-cruise-navy tracking-wide">
+                Guest Feedback
+              </h1>
+            </div>
+          )}
           <div className="h-0.5 w-16 mx-auto bg-cruise-gold rounded-full" />
         </motion.header>
       )}
