@@ -17,6 +17,7 @@ export type Database = {
       feedback: {
         Row: {
           comments: Json
+          comments_original: Json | null
           id: string
           image_url: string | null
           language: string
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           comments?: Json
+          comments_original?: Json | null
           id?: string
           image_url?: string | null
           language?: string
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           comments?: Json
+          comments_original?: Json | null
           id?: string
           image_url?: string | null
           language?: string

@@ -1,0 +1,1 @@
+ALTER TABLE public.feedback ADD COLUMN IF NOT EXISTS comments_original jsonb DEFAULT '{}'::jsonb;

@@ -83,7 +83,23 @@ const GuestFeedbackForm = () => {
       let imageUrl: string | null = null;
       const timestamp = Date.now();
 
-      // Generate professional 2-page PDF
+      // Translate comments to English if not already English
+      let translatedComments = { ...comments };
+      const originalComments = { ...comments };
+      if (lang !== "en") {
+        try {
+          const { data: translateData, error: translateErr } = await supabase.functions.invoke("translate-comments", {
+            body: { comments, language: lang },
+          });
+          if (!translateErr && translateData?.translated) {
+            translatedComments = translateData.translated;
+          }
+        } catch {
+          // Translation failed, use original comments
+        }
+      }
+
+      // Generate professional 2-page PDF (use translated comments)
       const pdf = new jsPDF("p", "mm", "a4");
       const w = pdf.internal.pageSize.getWidth();
       const h = pdf.internal.pageSize.getHeight();
@@ -226,7 +242,7 @@ const GuestFeedbackForm = () => {
       servicesItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `services_${item}`, y, i % 2 === 0);
       });
-      y = drawCommentBox(comments.services, y);
+      y = drawCommentBox(translatedComments.services, y);
       y += 4;
 
       // ---- FACILITIES ----
@@ -234,7 +250,7 @@ const GuestFeedbackForm = () => {
       facilitiesItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `facilities_${item}`, y, i % 2 === 0);
       });
-      y = drawCommentBox(comments.facilities, y);
+      y = drawCommentBox(translatedComments.facilities, y);
       y += 4;
 
       // ---- FOOD & DINING ----
@@ -242,16 +258,16 @@ const GuestFeedbackForm = () => {
       foodItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `food_${item}`, y, i % 2 === 0);
       });
-      y = drawCommentBox(comments.food, y);
+      y = drawCommentBox(translatedComments.food, y);
 
       // ===== PAGE 2 (or continue) =====
       // General comments section
-      if (comments.general) {
+      if (translatedComments.general) {
         if (y > h - 60) { pdf.addPage(); y = 25; }
         y += 6;
         y = drawSectionTitle("GENERAL COMMENTS & SUGGESTIONS", y);
         y += 2;
-        const genLines = pdf.splitTextToSize(comments.general, contentW - 12);
+        const genLines = pdf.splitTextToSize(translatedComments.general, contentW - 12);
         pdf.setFillColor(245, 248, 252);
         pdf.setDrawColor(180, 200, 220);
         pdf.setLineWidth(0.3);
@@ -341,13 +357,14 @@ const GuestFeedbackForm = () => {
         pdfUrl = pdfPath;
       }
 
-      // Save feedback to database
+      // Save feedback to database (translated comments + original)
       const { error: dbErr } = await supabase.from("feedback").insert({
         ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
         room_number: room,
         language: lang,
         ratings: ratings as any,
-        comments: comments as any,
+        comments: translatedComments as any,
+        comments_original: originalComments as any,
         pdf_url: pdfUrl,
         image_url: imageUrl,
       });
