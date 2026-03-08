@@ -13,17 +13,34 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "AI gateway not configured" }), {
-        status: 500,
+    // --- JWT Authentication ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Verify the user's JWT
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub;
 
     const { ship_id } = await req.json();
     if (!ship_id) {
@@ -33,8 +50,50 @@ serve(async (req) => {
       });
     }
 
-    // Fetch feedback
-    const { data: feedback, error: dbError } = await supabase
+    // --- Authorization: check ship membership or system_owner role ---
+    const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: isMember } = await serviceClient.rpc("is_ship_member", {
+      _user_id: userId,
+      _ship_id: ship_id,
+    });
+
+    const { data: isOwner } = await serviceClient.rpc("has_role", {
+      _user_id: userId,
+      _role: "system_owner",
+    });
+
+    if (!isMember && !isOwner) {
+      return new Response(JSON.stringify({ error: "Forbidden: not a member of this ship" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- Check account is approved ---
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("status")
+      .eq("user_id", userId)
+      .single();
+
+    if (profile?.status !== "approved" && !isOwner) {
+      return new Response(JSON.stringify({ error: "Account not approved" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- Fetch feedback ---
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "AI gateway not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: feedback, error: dbError } = await serviceClient
       .from("feedback")
       .select("room_number, language, ratings, comments, submitted_at")
       .eq("ship_id", ship_id)
@@ -42,7 +101,7 @@ serve(async (req) => {
       .limit(500);
 
     if (dbError) {
-      return new Response(JSON.stringify({ error: dbError.message }), {
+      return new Response(JSON.stringify({ error: "Failed to fetch feedback" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -105,8 +164,7 @@ Provide at least 3 recommendations sorted by priority.`;
 
     if (!aiResponse.ok) {
       const status = aiResponse.status;
-      const body = await aiResponse.text();
-      console.error("AI gateway error:", status, body);
+      console.error("AI gateway error:", status);
 
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited. Please try again in a minute." }), {
@@ -115,13 +173,13 @@ Provide at least 3 recommendations sorted by priority.`;
         });
       }
       if (status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Add credits in Settings → Workspace → Usage." }), {
+        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      return new Response(JSON.stringify({ error: `AI gateway error (${status})` }), {
+      return new Response(JSON.stringify({ error: "AI analysis failed" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -137,7 +195,6 @@ Provide at least 3 recommendations sorted by priority.`;
       });
     }
 
-    // Parse JSON from response (handle markdown code blocks)
     let jsonStr = content.trim();
     if (jsonStr.startsWith("```")) {
       jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
@@ -150,7 +207,7 @@ Provide at least 3 recommendations sorted by priority.`;
     });
   } catch (err) {
     console.error("analyze-feedback error:", err);
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

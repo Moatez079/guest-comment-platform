@@ -202,6 +202,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_approved_user: { Args: { _user_id: string }; Returns: boolean }
       is_ship_member: {
         Args: { _ship_id: string; _user_id: string }
         Returns: boolean
