@@ -357,13 +357,14 @@ const GuestFeedbackForm = () => {
         pdfUrl = pdfPath;
       }
 
-      // Save feedback to database
+      // Save feedback to database (translated comments + original)
       const { error: dbErr } = await supabase.from("feedback").insert({
         ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
         room_number: room,
         language: lang,
         ratings: ratings as any,
-        comments: comments as any,
+        comments: translatedComments as any,
+        comments_original: originalComments as any,
         pdf_url: pdfUrl,
         image_url: imageUrl,
       });
