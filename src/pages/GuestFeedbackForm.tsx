@@ -242,26 +242,26 @@ const GuestFeedbackForm = () => {
       servicesItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `services_${item}`, y, i % 2 === 0);
       });
-      y = drawCommentBox(translatedCranslatedCranslatedComments.services, y);
+      y = drawCommentBox(translatedCranslatedCranslatedCranslatedComments.services, y);
       y += 4;
 
       // ---- FACILITIES ----
       y = drawSectionTitle("FACILITIES", y);
       facilitiesItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `facilities_${item}`, y, i % 2 === 0);
-      });
+     translatedC});
      translatedCy = drawCtranslatedCmmentBox(comments.facilities, y);
       y += 4;
 
       // ---- FOOD & DINING ----
       y = drawSectionTitle("FOOD & DINING", y);
       foodItems.forEach((item, i) => {
-        y = drawRatingRow(t("en", item), `food_${item}`, y, i % 2 === 0);
+        y = drawRatingRow(t("en", item), `food_${item}`, y, i % 2 ===translatedC0);
       });
      translatedCy = drawCommentBox(comments.food, y);
 
       // ===== PAGE 2 (or continue) =====
-      // General comments section
+      // GenertranslatedCl comments section
       if (comments.general) {
         if (y > h - 60) { pdf.addPage(); y = 25; }
         y += 6;
