@@ -222,6 +222,50 @@ const AdminDashboard = () => {
   };
 
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [regeneratingPdfs, setRegeneratingPdfs] = useState(false);
+
+  const regenerateAllPdfs = async () => {
+    if (!shipId || feedbackList.length === 0) return;
+    if (!confirm("This will regenerate all PDFs with English comments. Continue?")) return;
+    setRegeneratingPdfs(true);
+    let count = 0;
+    try {
+      for (const f of feedbackList) {
+        const pdfBlob = generateFeedbackPdf({
+          shipName,
+          roomNumber: f.room_number,
+          language: f.language,
+          ratings: f.ratings || {},
+          comments: f.comments || {},
+          submittedAt: f.submitted_at,
+        });
+        const pdfPath = `${shipId}/${Date.now()}_room${f.room_number}.pdf`;
+
+        // Delete old PDF if exists
+        if (f.pdf_url) {
+          await supabase.storage.from("feedback-files").remove([f.pdf_url]);
+        }
+
+        // Upload new PDF
+        const { error: uploadErr } = await supabase.storage
+          .from("feedback-files")
+          .upload(pdfPath, pdfBlob, { contentType: "application/pdf" });
+
+        if (!uploadErr) {
+          await supabase.from("feedback").update({ pdf_url: pdfPath }).eq("id", f.id);
+          count++;
+        }
+      }
+      toast({ title: "Done!", description: `Regenerated ${count} PDFs with English comments.` });
+      // Refresh list
+      const { data } = await supabase.from("feedback").select("*").eq("ship_id", shipId).order("submitted_at", { ascending: false });
+      if (data) setFeedbackList(data as FeedbackRow[]);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to regenerate PDFs", variant: "destructive" });
+    } finally {
+      setRegeneratingPdfs(false);
+    }
+  };
 
   const downloadReportPdf = () => {
     if (!aiReport) return;
