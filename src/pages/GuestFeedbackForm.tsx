@@ -242,7 +242,7 @@ const GuestFeedbackForm = () => {
       servicesItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `services_${item}`, y, i % 2 === 0);
       });
-      y = drawCommentBox(translatedCranslatedComments.services, y);
+      y = drawCommentBox(translatedCranslatedCranslatedComments.services, y);
       y += 4;
 
       // ---- FACILITIES ----
@@ -250,7 +250,7 @@ const GuestFeedbackForm = () => {
       facilitiesItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `facilities_${item}`, y, i % 2 === 0);
       });
-      y = drawCtranslatedCmmentBox(comments.facilities, y);
+     translatedCy = drawCtranslatedCmmentBox(comments.facilities, y);
       y += 4;
 
       // ---- FOOD & DINING ----
@@ -258,7 +258,7 @@ const GuestFeedbackForm = () => {
       foodItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `food_${item}`, y, i % 2 === 0);
       });
-      y = drawCommentBox(comments.food, y);
+     translatedCy = drawCommentBox(comments.food, y);
 
       // ===== PAGE 2 (or continue) =====
       // General comments section
