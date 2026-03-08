@@ -140,7 +140,8 @@ Output (in English):`;
     });
 
     if (!aiResponse.ok) {
-      console.error("AI translation error:", aiResponse.status);
+      const errBody = await aiResponse.text();
+      console.error("AI translation error:", aiResponse.status, errBody);
       return new Response(JSON.stringify({ translated: comments, original: comments }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
