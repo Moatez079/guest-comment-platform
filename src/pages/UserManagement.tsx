@@ -37,6 +37,8 @@ const UserManagement = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [ships, setShips] = useState<ShipOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isSystemOwner, setIsSystemOwner] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [assignDialog, setAssignDialog] = useState<{ open: boolean; user: UserProfile | null }>({ open: false, user: null });
   const [selectedShip, setSelectedShip] = useState("");
@@ -61,6 +63,8 @@ const UserManagement = () => {
       return;
     }
 
+    setIsSystemOwner(true);
+    setAuthChecked(true);
     await loadData();
   };
 
