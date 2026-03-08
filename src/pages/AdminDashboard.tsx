@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from "jspdf";
+import { generateFeedbackPdf } from "@/lib/feedbackPdfGenerator";
 import ShipQRCode from "@/components/admin/ShipQRCode";
 import DashboardCharts from "@/components/admin/DashboardCharts";
 import MobileNav from "@/components/admin/MobileNav";
