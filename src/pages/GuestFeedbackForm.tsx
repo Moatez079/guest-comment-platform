@@ -82,22 +82,20 @@ const GuestFeedbackForm = () => {
       let pdfUrl: string | null = null;
       let imageUrl: string | null = null;
       const timestamp = Date.now();
-
-      // Translate comments to English if not already English
-      let translatedComments = { ...comments };
       const originalComments = { ...comments };
-      if (lang !== "en") {
-        try {
-          const { data: translateData, error: translateErr } = await supabase.functions.invoke("translate-comments", {
+
+      // Start translation in parallel (non-blocking) while we prepare PDF
+      const translationPromise = lang !== "en"
+        ? supabase.functions.invoke("translate-comments", {
             body: { comments, language: lang },
-          });
-          if (!translateErr && translateData?.translated) {
-            translatedComments = translateData.translated;
-          }
-        } catch {
-          // Translation failed, use original comments
-        }
-      }
+          }).then(({ data, error }) => {
+            if (!error && data?.translated) return data.translated;
+            return { ...comments };
+          }).catch(() => ({ ...comments }))
+        : Promise.resolve({ ...comments });
+
+      // Build PDF while translation is in-flight
+      const translatedComments = await translationPromise;
 
       // Generate professional 2-page PDF (use translated comments)
       const pdf = new jsPDF("p", "mm", "a4");
@@ -348,29 +346,29 @@ const GuestFeedbackForm = () => {
         return;
       }
 
-      // Online: upload PDF and save to DB
-      const { error: pdfErr } = await supabase.storage
-        .from("feedback-files")
-        .upload(pdfPath, pdfBlob, { contentType: "application/pdf" });
+      // Online: upload PDF and save to DB in parallel
+      const [pdfResult, dbResult] = await Promise.all([
+        supabase.storage
+          .from("feedback-files")
+          .upload(pdfPath, pdfBlob, { contentType: "application/pdf" }),
+        supabase.from("feedback").insert({
+          ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
+          room_number: room,
+          language: lang,
+          ratings: ratings as any,
+          comments: translatedComments as any,
+          comments_original: originalComments as any,
+          pdf_url: pdfPath,
+          image_url: imageUrl,
+        }),
+      ]);
 
-      if (!pdfErr) {
-        pdfUrl = pdfPath;
+      if (pdfResult.error) {
+        console.error("PDF upload error:", pdfResult.error);
       }
 
-      // Save feedback to database (translated comments + original)
-      const { error: dbErr } = await supabase.from("feedback").insert({
-        ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
-        room_number: room,
-        language: lang,
-        ratings: ratings as any,
-        comments: translatedComments as any,
-        comments_original: originalComments as any,
-        pdf_url: pdfUrl,
-        image_url: imageUrl,
-      });
-
-      if (dbErr) {
-        console.error("DB error:", dbErr);
+      if (dbResult.error) {
+        console.error("DB error:", dbResult.error);
         // Fallback to offline storage
         const pdfArrayBuffer = await pdfBlob.arrayBuffer();
         await saveFeedbackOffline({
