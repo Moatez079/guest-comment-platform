@@ -97,7 +97,6 @@ export async function syncPendingFeedback(): Promise<number> {
         language: item.language,
         ratings: item.ratings as any,
         comments: translatedComments as any,
-        comments_original: item.comments as any,
         pdf_url: pdfUrl,
       });
 

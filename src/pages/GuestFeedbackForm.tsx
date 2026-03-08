@@ -357,7 +357,6 @@ const GuestFeedbackForm = () => {
           language: lang,
           ratings: ratings as any,
           comments: translatedComments as any,
-          comments_original: originalComments as any,
           pdf_url: pdfPath,
           image_url: imageUrl,
         }),
