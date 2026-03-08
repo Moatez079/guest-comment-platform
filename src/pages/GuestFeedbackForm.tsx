@@ -83,7 +83,23 @@ const GuestFeedbackForm = () => {
       let imageUrl: string | null = null;
       const timestamp = Date.now();
 
-      // Generate professional 2-page PDF
+      // Translate comments to English if not already English
+      let translatedComments = { ...comments };
+      const originalComments = { ...comments };
+      if (lang !== "en") {
+        try {
+          const { data: translateData, error: translateErr } = await supabase.functions.invoke("translate-comments", {
+            body: { comments, language: lang },
+          });
+          if (!translateErr && translateData?.translated) {
+            translatedComments = translateData.translated;
+          }
+        } catch {
+          // Translation failed, use original comments
+        }
+      }
+
+      // Generate professional 2-page PDF (use translated comments)
       const pdf = new jsPDF("p", "mm", "a4");
       const w = pdf.internal.pageSize.getWidth();
       const h = pdf.internal.pageSize.getHeight();
