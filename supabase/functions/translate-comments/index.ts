@@ -147,13 +147,16 @@ Output (in English):`;
     }
 
     const aiData = await aiResponse.json();
+    console.log("AI response:", JSON.stringify(aiData));
     let content = aiData.choices?.[0]?.message?.content?.trim() || "";
+    console.log("AI content:", content);
 
     if (content.startsWith("```")) {
       content = content.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
     }
 
     const translated = JSON.parse(content);
+    console.log("Parsed translated:", JSON.stringify(translated));
 
     return new Response(JSON.stringify({ translated, original: comments }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
