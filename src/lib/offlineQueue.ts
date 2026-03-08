@@ -76,12 +76,28 @@ export async function syncPendingFeedback(): Promise<number> {
         if (!pdfErr) pdfUrl = item.pdf_path;
       }
 
+      // Translate comments to English if not already English
+      let translatedComments = { ...item.comments };
+      if (item.language && item.language !== "en") {
+        try {
+          const { data, error: txErr } = await supabase.functions.invoke("translate-comments", {
+            body: { comments: item.comments, language: item.language },
+          });
+          if (!txErr && data?.translated) {
+            translatedComments = data.translated;
+          }
+        } catch {
+          // Translation failed, will save original comments
+        }
+      }
+
       const { error } = await supabase.from("feedback").insert({
         ship_id: item.ship_id,
         room_number: item.room_number,
         language: item.language,
         ratings: item.ratings as any,
-        comments: item.comments as any,
+        comments: translatedComments as any,
+        comments_original: item.comments as any,
         pdf_url: pdfUrl,
       });
 
