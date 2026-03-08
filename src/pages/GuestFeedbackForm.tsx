@@ -82,7 +82,7 @@ const GuestFeedbackForm = () => {
       let pdfUrl: string | null = null;
       let imageUrl: string | null = null;
       const timestamp = Date.now();
-      const originalComments = { ...comments };
+      // Comments will be translated to English before saving
 
       // Start translation in parallel (non-blocking) while we prepare PDF
       const translationPromise = lang !== "en"
@@ -357,7 +357,6 @@ const GuestFeedbackForm = () => {
           language: lang,
           ratings: ratings as any,
           comments: translatedComments as any,
-          comments_original: originalComments as any,
           pdf_url: pdfPath,
           image_url: imageUrl,
         }),
