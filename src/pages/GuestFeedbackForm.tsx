@@ -8,7 +8,6 @@ import { t } from "@/i18n/translations";
 import RatingSelector from "@/components/guest/RatingSelector";
 import GuestLayout from "@/components/guest/GuestLayout";
 import { generateFeedbackPdf } from "@/lib/feedbackPdfGenerator";
-import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { saveFeedbackOffline, syncPendingFeedback } from "@/lib/offlineQueue";
