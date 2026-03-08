@@ -387,6 +387,10 @@ const AdminDashboard = () => {
                   <Button variant="outline" size="sm" className="gap-2" onClick={downloadAllPdfs}>
                     <Download className="h-4 w-4" /> Download All
                   </Button>
+                  <Button variant="outline" size="sm" className="gap-2" onClick={regenerateAllPdfs} disabled={regeneratingPdfs}>
+                    {regeneratingPdfs ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    {regeneratingPdfs ? "Regenerating..." : "Regenerate PDFs"}
+                  </Button>
                   <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteAllFeedback}>
                     <Trash2 className="h-4 w-4" /> Delete All
                   </Button>
