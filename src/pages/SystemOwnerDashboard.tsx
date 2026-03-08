@@ -31,6 +31,8 @@ const SystemOwnerDashboard = () => {
   const { toast } = useToast();
   const [ships, setShips] = useState<ShipWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isSystemOwner, setIsSystemOwner] = useState(false);
   const [newShipName, setNewShipName] = useState("");
   const [creating, setCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -55,6 +57,8 @@ const SystemOwnerDashboard = () => {
       return;
     }
 
+    setIsSystemOwner(true);
+    setAuthChecked(true);
     await loadShips();
   };
 
