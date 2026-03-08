@@ -31,6 +31,8 @@ const SystemOwnerDashboard = () => {
   const { toast } = useToast();
   const [ships, setShips] = useState<ShipWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isSystemOwner, setIsSystemOwner] = useState(false);
   const [newShipName, setNewShipName] = useState("");
   const [creating, setCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -55,6 +57,8 @@ const SystemOwnerDashboard = () => {
       return;
     }
 
+    setIsSystemOwner(true);
+    setAuthChecked(true);
     await loadShips();
   };
 
@@ -153,6 +157,15 @@ const SystemOwnerDashboard = () => {
   const mobileBottomItems = [
     { icon: LogOut, label: "Sign Out", onClick: handleLogout },
   ];
+
+  // Don't render UI until role is confirmed
+  if (!authChecked || !isSystemOwner) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
