@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from "jspdf";
+import { generateFeedbackPdf } from "@/lib/feedbackPdfGenerator";
 import ShipQRCode from "@/components/admin/ShipQRCode";
 import DashboardCharts from "@/components/admin/DashboardCharts";
 import MobileNav from "@/components/admin/MobileNav";
@@ -222,6 +222,50 @@ const AdminDashboard = () => {
   };
 
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [regeneratingPdfs, setRegeneratingPdfs] = useState(false);
+
+  const regenerateAllPdfs = async () => {
+    if (!shipId || feedbackList.length === 0) return;
+    if (!confirm("This will regenerate all PDFs with English comments. Continue?")) return;
+    setRegeneratingPdfs(true);
+    let count = 0;
+    try {
+      for (const f of feedbackList) {
+        const pdfBlob = generateFeedbackPdf({
+          shipName,
+          roomNumber: f.room_number,
+          language: f.language,
+          ratings: f.ratings || {},
+          comments: f.comments || {},
+          submittedAt: f.submitted_at,
+        });
+        const pdfPath = `${shipId}/${Date.now()}_room${f.room_number}.pdf`;
+
+        // Delete old PDF if exists
+        if (f.pdf_url) {
+          await supabase.storage.from("feedback-files").remove([f.pdf_url]);
+        }
+
+        // Upload new PDF
+        const { error: uploadErr } = await supabase.storage
+          .from("feedback-files")
+          .upload(pdfPath, pdfBlob, { contentType: "application/pdf" });
+
+        if (!uploadErr) {
+          await supabase.from("feedback").update({ pdf_url: pdfPath }).eq("id", f.id);
+          count++;
+        }
+      }
+      toast({ title: "Done!", description: `Regenerated ${count} PDFs with English comments.` });
+      // Refresh list
+      const { data } = await supabase.from("feedback").select("*").eq("ship_id", shipId).order("submitted_at", { ascending: false });
+      if (data) setFeedbackList(data as FeedbackRow[]);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to regenerate PDFs", variant: "destructive" });
+    } finally {
+      setRegeneratingPdfs(false);
+    }
+  };
 
   const downloadReportPdf = () => {
     if (!aiReport) return;
@@ -342,6 +386,10 @@ const AdminDashboard = () => {
                 <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" size="sm" className="gap-2" onClick={downloadAllPdfs}>
                     <Download className="h-4 w-4" /> Download All
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2" onClick={regenerateAllPdfs} disabled={regeneratingPdfs}>
+                    {regeneratingPdfs ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    {regeneratingPdfs ? "Regenerating..." : "Regenerate PDFs"}
                   </Button>
                   <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteAllFeedback}>
                     <Trash2 className="h-4 w-4" /> Delete All
