@@ -6,12 +6,38 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Simple in-memory rate limiter (per-instance, resets on cold start)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 20; // max requests per window
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Rate limiting by IP
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                     req.headers.get("cf-connecting-ip") || "unknown";
+    if (isRateLimited(clientIp)) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "AI gateway not configured" }), {
@@ -20,7 +46,57 @@ serve(async (req) => {
       });
     }
 
-    const { comments, language } = await req.json();
+    const body = await req.text();
+
+    // Input size limit: reject payloads > 5KB
+    if (body.length > 5000) {
+      return new Response(JSON.stringify({ error: "Payload too large" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { comments, language } = JSON.parse(body);
+
+    // Validate language is a string and reasonable length
+    if (!language || typeof language !== "string" || language.length > 10) {
+      return new Response(JSON.stringify({ error: "Invalid language" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate comments is an object with string values
+    if (!comments || typeof comments !== "object" || Array.isArray(comments)) {
+      return new Response(JSON.stringify({ error: "Invalid comments format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Limit number of comment fields and individual comment length
+    const keys = Object.keys(comments);
+    if (keys.length > 20) {
+      return new Response(JSON.stringify({ error: "Too many comment fields" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    for (const key of keys) {
+      if (typeof comments[key] !== "string") {
+        return new Response(JSON.stringify({ error: "Comment values must be strings" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (comments[key].length > 2000) {
+        return new Response(JSON.stringify({ error: `Comment "${key}" exceeds maximum length` }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     // If language is English or no comments, return as-is
     if (language === "en") {
@@ -62,7 +138,6 @@ ${JSON.stringify(comments)}`;
 
     if (!aiResponse.ok) {
       console.error("AI translation error:", aiResponse.status);
-      // Fallback: return original comments if translation fails
       return new Response(JSON.stringify({ translated: comments, original: comments }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -71,7 +146,6 @@ ${JSON.stringify(comments)}`;
     const aiData = await aiResponse.json();
     let content = aiData.choices?.[0]?.message?.content?.trim() || "";
 
-    // Strip markdown code blocks if present
     if (content.startsWith("```")) {
       content = content.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
     }
@@ -83,9 +157,8 @@ ${JSON.stringify(comments)}`;
     });
   } catch (err) {
     console.error("translate-comments error:", err);
-    // Fallback: return original
-    const body = await req.clone().json().catch(() => ({ comments: {} }));
-    return new Response(JSON.stringify({ translated: body.comments, original: body.comments }), {
+    return new Response(JSON.stringify({ error: "Translation failed" }), {
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
