@@ -242,7 +242,7 @@ const GuestFeedbackForm = () => {
       servicesItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `services_${item}`, y, i % 2 === 0);
       });
-      y = drawCommentBox(comments.services, y);
+      y = drawCommentBox(translatedComments.services, y);
       y += 4;
 
       // ---- FACILITIES ----
