@@ -22,27 +22,54 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
-// Use Google Translate free API as primary, AI gateway as fallback
+// 3-tier translation: Google Translate → LibreTranslate → AI Gateway
 async function translateText(text: string, sourceLang: string): Promise<string> {
   if (!text || !text.trim()) return text;
   
-  // Try Google Translate free endpoint
+  // 1) Google Translate free endpoint
   try {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=en&dt=t&q=${encodeURIComponent(text)}`;
     const res = await fetch(url);
     if (res.ok) {
       const data = await res.json();
-      // Response format: [[["translated text","original text",null,null,num]],null,"lang"]
       if (data && data[0]) {
         const translated = data[0].map((seg: any) => seg[0]).join("");
-        if (translated && translated.trim()) return translated;
+        if (translated && translated.trim()) {
+          console.log("Translated via Google");
+          return translated;
+        }
       }
     }
   } catch (e) {
     console.error("Google translate error:", e);
   }
 
-  // Fallback: try AI gateway
+  // 2) LibreTranslate (free, no API key needed)
+  try {
+    const libreRes = await fetch("https://libretranslate.com/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        q: text,
+        source: sourceLang === "zh" ? "zh" : sourceLang,
+        target: "en",
+        format: "text",
+      }),
+    });
+    if (libreRes.ok) {
+      const libreData = await libreRes.json();
+      if (libreData?.translatedText?.trim()) {
+        console.log("Translated via LibreTranslate");
+        return libreData.translatedText;
+      }
+    } else {
+      await libreRes.text(); // consume body
+    }
+  } catch (e) {
+    console.error("LibreTranslate error:", e);
+  }
+
+  // 3) AI Gateway fallback
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (LOVABLE_API_KEY) {
@@ -53,9 +80,9 @@ async function translateText(text: string, sourceLang: string): Promise<string> 
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash-lite",
           messages: [
-            { role: "system", content: "Translate to English. Return ONLY the translation, nothing else." },
+            { role: "system", content: "You are a translator. Translate the following text to English. Output ONLY the English translation, no explanations." },
             { role: "user", content: text },
           ],
           temperature: 0.1,
@@ -64,7 +91,10 @@ async function translateText(text: string, sourceLang: string): Promise<string> 
       if (aiRes.ok) {
         const aiData = await aiRes.json();
         const content = aiData.choices?.[0]?.message?.content?.trim();
-        if (content) return content;
+        if (content) {
+          console.log("Translated via AI Gateway");
+          return content;
+        }
       } else {
         const errBody = await aiRes.text();
         console.error("AI fallback error:", aiRes.status, errBody);
