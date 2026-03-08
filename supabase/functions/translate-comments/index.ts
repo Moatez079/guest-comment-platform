@@ -104,6 +104,41 @@ async function translateText(text: string, sourceLang: string): Promise<string> 
     console.error("AI fallback error:", e);
   }
 
+  // 4) GPT-5-nano fallback (last resort)
+  try {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (LOVABLE_API_KEY) {
+      const gptRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-5-nano",
+          messages: [
+            { role: "system", content: "You are a translator. Translate the following text to English. Output ONLY the English translation, no explanations." },
+            { role: "user", content: text },
+          ],
+          temperature: 0.1,
+        }),
+      });
+      if (gptRes.ok) {
+        const gptData = await gptRes.json();
+        const content = gptData.choices?.[0]?.message?.content?.trim();
+        if (content) {
+          console.log("Translated via GPT-5-nano");
+          return content;
+        }
+      } else {
+        const errBody = await gptRes.text();
+        console.error("GPT-5-nano fallback error:", gptRes.status, errBody);
+      }
+    }
+  } catch (e) {
+    console.error("GPT-5-nano fallback error:", e);
+  }
+
   return text; // Return original if all fails
 }
 
