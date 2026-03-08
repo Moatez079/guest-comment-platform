@@ -242,13 +242,13 @@ const GuestFeedbackForm = () => {
       servicesItems.forEach((item, i) => {
         y = drawRatingRow(t("en", item), `services_${item}`, y, i % 2 === 0);
       });
-      y = drawCommentBox(translatedCranslatedCranslatedCranslatedComments.services, y);
+      y = drawCommentBox(translatedCranslatedCranslatedCranslatedCranslatedComments.services, y);
       y += 4;
 
       // ---- FACILITIES ----
       y = drawSectionTitle("FACILITIES", y);
       facilitiesItems.forEach((item, i) => {
-        y = drawRatingRow(t("en", item), `facilities_${item}`, y, i % 2 === 0);
+        y = drawRatingRow(t("en", item), `facilities_${item}`, y, i % 2 ===translatedC0);
      translatedC});
      translatedCy = drawCtranslatedCmmentBox(comments.facilities, y);
       y += 4;
@@ -256,18 +256,18 @@ const GuestFeedbackForm = () => {
       // ---- FOOD & DINING ----
       y = drawSectionTitle("FOOD & DINING", y);
       foodItems.forEach((item, i) => {
-        y = drawRatingRow(t("en", item), `food_${item}`, y, i % 2 ===translatedC0);
+        y = drawRatingRow(t("en", item), `food_${translatedCtem}`, y, i % 2 ===translatedC0);
       });
      translatedCy = drawCommentBox(comments.food, y);
 
-      // ===== PAGE 2 (or continue) =====
+      // ===== PAGE 2 (or translatedContinue) =====
       // GenertranslatedCl comments section
       if (comments.general) {
         if (y > h - 60) { pdf.addPage(); y = 25; }
         y += 6;
         y = drawSectionTitle("GENERAL COMMENTS & SUGGESTIONS", y);
         y += 2;
-        const genLines = pdf.splitTextToSize(comments.general, contentW - 12);
+     translatedC  const genLines = pdf.splitTextToSize(comments.general, contentW - 12);
         pdf.setFillColor(245, 248, 252);
         pdf.setDrawColor(180, 200, 220);
         pdf.setLineWidth(0.3);
