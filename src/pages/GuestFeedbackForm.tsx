@@ -346,29 +346,29 @@ const GuestFeedbackForm = () => {
         return;
       }
 
-      // Online: upload PDF and save to DB
-      const { error: pdfErr } = await supabase.storage
-        .from("feedback-files")
-        .upload(pdfPath, pdfBlob, { contentType: "application/pdf" });
+      // Online: upload PDF and save to DB in parallel
+      const [pdfResult, dbResult] = await Promise.all([
+        supabase.storage
+          .from("feedback-files")
+          .upload(pdfPath, pdfBlob, { contentType: "application/pdf" }),
+        supabase.from("feedback").insert({
+          ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
+          room_number: room,
+          language: lang,
+          ratings: ratings as any,
+          comments: translatedComments as any,
+          comments_original: originalComments as any,
+          pdf_url: pdfPath,
+          image_url: imageUrl,
+        }),
+      ]);
 
-      if (!pdfErr) {
-        pdfUrl = pdfPath;
+      if (pdfResult.error) {
+        console.error("PDF upload error:", pdfResult.error);
       }
 
-      // Save feedback to database (translated comments + original)
-      const { error: dbErr } = await supabase.from("feedback").insert({
-        ship_id: resolvedShipId || "00000000-0000-0000-0000-000000000000",
-        room_number: room,
-        language: lang,
-        ratings: ratings as any,
-        comments: translatedComments as any,
-        comments_original: originalComments as any,
-        pdf_url: pdfUrl,
-        image_url: imageUrl,
-      });
-
-      if (dbErr) {
-        console.error("DB error:", dbErr);
+      if (dbResult.error) {
+        console.error("DB error:", dbResult.error);
         // Fallback to offline storage
         const pdfArrayBuffer = await pdfBlob.arrayBuffer();
         await saveFeedbackOffline({
