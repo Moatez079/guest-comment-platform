@@ -155,6 +155,14 @@ const AdminDashboard = () => {
     setLoading(false);
   };
 
+  const handleShipSwitch = (newShipId: string) => {
+    const matched = userShips.find((s) => s.id === newShipId);
+    setShipId(newShipId);
+    setShipName(matched?.name || "");
+    setAiReport(null);
+    loadFeedback(newShipId);
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/admin/login");
