@@ -14,6 +14,7 @@ import { generateFeedbackPdf } from "@/lib/feedbackPdfGenerator";
 import ShipQRCode from "@/components/admin/ShipQRCode";
 import DashboardCharts from "@/components/admin/DashboardCharts";
 import MobileNav from "@/components/admin/MobileNav";
+import ShipSelector from "@/components/admin/ShipSelector";
 import { generateLocalAnalysis } from "@/lib/localAnalysis";
 import { generateReportPdf } from "@/lib/reportPdfGenerator";
 
