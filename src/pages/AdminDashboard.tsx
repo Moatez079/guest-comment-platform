@@ -392,6 +392,14 @@ const AdminDashboard = () => {
 
       {/* Main content */}
       <main className="flex-1 p-4 md:p-6 overflow-auto pt-20 md:pt-6">
+        {/* Ship Selector */}
+        {userShips.length > 1 && shipId && (
+          <ShipSelector
+            ships={userShips}
+            selectedShipId={shipId}
+            onShipChange={handleShipSwitch}
+          />
+        )}
         <AnimatePresence mode="wait">
           {activeTab === "Dashboard" && (
             <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
