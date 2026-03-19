@@ -101,36 +101,43 @@ const AdminDashboard = () => {
 
     // Check for ship query param first
     const shipParam = searchParams.get("ship");
-    if (shipParam) {
-      setShipId(shipParam);
-      supabase.from("ships").select("name").eq("id", shipParam).maybeSingle()
-        .then(({ data }) => { if (data?.name) setShipName(data.name); });
-      loadFeedback(shipParam);
-      return;
+
+    // Get ALL user's ships
+    const { data: memberships } = await supabase
+      .from("ship_members")
+      .select("ship_id, ships(name)")
+      .eq("user_id", user.id);
+
+    const userShipsList = (memberships || []).map((m: any) => ({
+      id: m.ship_id,
+      name: m.ships?.name || "Unknown",
+    }));
+
+    // For system owners, also fetch all ships if they have no memberships
+    if (isSystemOwner || (roles && roles.length > 0)) {
+      if (userShipsList.length === 0) {
+        const { data: allShips } = await supabase.from("ships").select("id, name").order("name");
+        if (allShips) userShipsList.push(...allShips);
+      }
     }
 
-    // Get user's ship
-    const { data: membership } = await supabase
-      .from("ship_members")
-      .select("ship_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle();
+    setUserShips(userShipsList);
 
-    if (membership?.ship_id) {
-      setShipId(membership.ship_id);
-      supabase.from("ships").select("name").eq("id", membership.ship_id).maybeSingle()
-        .then(({ data }) => { if (data?.name) setShipName(data.name); });
-      loadFeedback(membership.ship_id);
-    } else {
-      const { data: ships } = await supabase.from("ships").select("id, name").limit(1);
-      if (ships && ships.length > 0) {
-        setShipId(ships[0].id);
-        setShipName(ships[0].name);
-        loadFeedback(ships[0].id);
+    // Determine which ship to show
+    const targetShipId = shipParam || (userShipsList.length > 0 ? userShipsList[0].id : null);
+
+    if (targetShipId) {
+      setShipId(targetShipId);
+      const matchedShip = userShipsList.find((s) => s.id === targetShipId);
+      if (matchedShip) {
+        setShipName(matchedShip.name);
       } else {
-        setLoading(false);
+        supabase.from("ships").select("name").eq("id", targetShipId).maybeSingle()
+          .then(({ data }) => { if (data?.name) setShipName(data.name); });
       }
+      loadFeedback(targetShipId);
+    } else {
+      setLoading(false);
     }
   };
 
