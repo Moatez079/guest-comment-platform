@@ -1,22 +1,60 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Download, Printer, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 
 interface ShipQRCodeProps {
   shipId: string;
   shipName?: string;
 }
 
+const qrCaptions: Record<string, { scan: string; hint: string; footer: string }> = {
+  en: { scan: "Scan to leave your feedback", hint: "Available in 15+ languages", footer: "We value your feedback to make your cruise unforgettable" },
+  es: { scan: "Escanea para dejar tu opinión", hint: "Disponible en más de 15 idiomas", footer: "Valoramos tu opinión para hacer tu crucero inolvidable" },
+  it: { scan: "Scansiona per lasciare il tuo feedback", hint: "Disponibile in oltre 15 lingue", footer: "Apprezziamo il tuo feedback per rendere la tua crociera indimenticabile" },
+  fr: { scan: "Scannez pour laisser votre avis", hint: "Disponible en plus de 15 langues", footer: "Nous apprécions vos commentaires pour rendre votre croisière inoubliable" },
+  de: { scan: "Scannen Sie, um Ihr Feedback zu hinterlassen", hint: "Verfügbar in über 15 Sprachen", footer: "Wir schätzen Ihr Feedback, um Ihre Kreuzfahrt unvergesslich zu machen" },
+  nl: { scan: "Scan om uw feedback achter te laten", hint: "Beschikbaar in meer dan 15 talen", footer: "Wij waarderen uw feedback om uw cruise onvergetelijk te maken" },
+  pl: { scan: "Zeskanuj, aby zostawić opinię", hint: "Dostępne w ponad 15 językach", footer: "Cenimy Twoją opinię, aby uczynić Twój rejs niezapomnianym" },
+  ko: { scan: "스캔하여 피드백을 남겨주세요", hint: "15개 이상의 언어로 제공", footer: "잊지 못할 크루즈를 위해 여러분의 의견을 소중히 여깁니다" },
+  ja: { scan: "スキャンしてフィードバックをお寄せください", hint: "15以上の言語で利用可能", footer: "忘れられないクルーズのために、皆様のご意見を大切にしています" },
+  zh: { scan: "扫描以留下您的反馈", hint: "支持15种以上语言", footer: "我们重视您的反馈，让您的邮轮之旅难以忘怀" },
+  hi: { scan: "अपनी प्रतिक्रिया देने के लिए स्कैन करें", hint: "15+ भाषाओं में उपलब्ध", footer: "आपकी क्रूज़ यात्रा को अविस्मरणीय बनाने के लिए हम आपकी प्रतिक्रिया को महत्व देते हैं" },
+  ar: { scan: "امسح الرمز لترك ملاحظاتك", hint: "متاح بأكثر من 15 لغة", footer: "نقدّر ملاحظاتك لجعل رحلتك البحرية لا تُنسى" },
+  pt: { scan: "Digitalize para deixar o seu feedback", hint: "Disponível em mais de 15 idiomas", footer: "Valorizamos o seu feedback para tornar o seu cruzeiro inesquecível" },
+  ru: { scan: "Отсканируйте, чтобы оставить отзыв", hint: "Доступно на 15+ языках", footer: "Мы ценим ваш отзыв, чтобы сделать ваш круиз незабываемым" },
+  tr: { scan: "Geri bildiriminizi bırakmak için tarayın", hint: "15'ten fazla dilde mevcut", footer: "Yolculuğunuzu unutulmaz kılmak için geri bildirimlerinize değer veriyoruz" },
+};
+
+const captionLanguages = [
+  { code: "en", label: "🇬🇧 English" },
+  { code: "es", label: "🇪🇸 Español" },
+  { code: "it", label: "🇮🇹 Italiano" },
+  { code: "fr", label: "🇫🇷 Français" },
+  { code: "de", label: "🇩🇪 Deutsch" },
+  { code: "nl", label: "🇳🇱 Nederlands" },
+  { code: "pl", label: "🇵🇱 Polski" },
+  { code: "ko", label: "🇰🇷 한국어" },
+  { code: "ja", label: "🇯🇵 日本語" },
+  { code: "zh", label: "🇨🇳 中文" },
+  { code: "hi", label: "🇮🇳 हिन्दी" },
+  { code: "ar", label: "🇸🇦 العربية" },
+  { code: "pt", label: "🇵🇹 Português" },
+  { code: "ru", label: "🇷🇺 Русский" },
+  { code: "tr", label: "🇹🇷 Türkçe" },
+];
+
 const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps) => {
   const qrRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [captionLang, setCaptionLang] = useState("en");
 
   const feedbackUrl = `${window.location.origin}/ship/${shipId}/feedback/lang`;
+  const captions = qrCaptions[captionLang] || qrCaptions.en;
 
   const downloadQR = () => {
     if (!qrRef.current) return;
@@ -32,46 +70,37 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
     canvas.height = 1500;
 
     img.onload = () => {
-      // White background
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Header
       ctx.fillStyle = "#1e3a5f";
       ctx.font = "bold 48px serif";
       ctx.textAlign = "center";
       ctx.fillText(shipName, 600, 80);
 
-      // Gold line
       ctx.fillStyle = "#c49a3c";
       ctx.fillRect(500, 100, 200, 4);
 
-      // Subtitle
       ctx.fillStyle = "#666666";
       ctx.font = "28px sans-serif";
       ctx.fillText("Guest Feedback", 600, 150);
 
-      // QR Code
       ctx.drawImage(img, 200, 200, 800, 800);
 
-      // Scan instruction
       ctx.fillStyle = "#1e3a5f";
       ctx.font = "bold 32px sans-serif";
-      ctx.fillText("Scan to share your experience", 600, 1100);
+      ctx.fillText(captions.scan, 600, 1100);
 
-      // Multi-language hint
       ctx.fillStyle = "#999999";
       ctx.font = "22px sans-serif";
-      ctx.fillText("Available in 15+ languages", 600, 1150);
+      ctx.fillText(captions.hint, 600, 1150);
 
-      // Footer
       ctx.fillStyle = "#c49a3c";
       ctx.fillRect(100, 1220, 1000, 2);
       ctx.fillStyle = "#aaaaaa";
       ctx.font = "18px sans-serif";
-      ctx.fillText("We value your feedback to make your cruise unforgettable", 600, 1260);
+      ctx.fillText(captions.footer, 600, 1260);
 
-      // Download
       const link = document.createElement("a");
       link.download = `${shipName.replace(/\s+/g, "_")}_QR_Code.png`;
       link.href = canvas.toDataURL("image/png");
@@ -113,9 +142,9 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
         <div class="qr-container">
           ${qrRef.current?.querySelector("svg")?.outerHTML || ""}
         </div>
-        <div class="scan-text">Scan to share your experience</div>
-        <div class="lang-text">Available in 15+ languages</div>
-        <div class="footer">We value your feedback to make your cruise unforgettable</div>
+        <div class="scan-text">${captions.scan}</div>
+        <div class="lang-text">${captions.hint}</div>
+        <div class="footer">${captions.footer}</div>
         <script>window.onload = () => { window.print(); window.close(); }</script>
       </body>
       </html>
@@ -140,9 +169,26 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
           </p>
         </CardHeader>
         <CardContent className="flex flex-col items-center">
+          {/* Caption Language Selector */}
+          <div className="w-full mb-4">
+            <label className="text-sm font-medium text-foreground mb-1.5 block">Caption Language</label>
+            <Select value={captionLang} onValueChange={setCaptionLang}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {captionLanguages.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div
             ref={qrRef}
-            className="p-6 bg-white rounded-2xl border-2 border-border shadow-inner mb-6"
+            className="p-6 bg-white rounded-2xl border-2 border-border shadow-inner mb-2"
           >
             <QRCodeSVG
               value={feedbackUrl}
@@ -152,6 +198,12 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
               fgColor="#1e3a5f"
               bgColor="#ffffff"
             />
+          </div>
+
+          {/* Caption Preview */}
+          <div className="text-center mb-4">
+            <p className="text-sm font-semibold text-foreground">{captions.scan}</p>
+            <p className="text-xs text-muted-foreground">{captions.hint}</p>
           </div>
 
           <div className="w-full space-y-2 mb-4">
@@ -183,7 +235,7 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
           <ol className="space-y-3 text-sm text-muted-foreground">
             <li className="flex gap-3">
               <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">1</span>
-              <span>Download or print the QR code above</span>
+              <span>Choose the caption language above, then download or print the QR code</span>
             </li>
             <li className="flex gap-3">
               <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">2</span>
