@@ -202,8 +202,8 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
 
           {/* Caption Preview */}
           <div className="text-center mb-4">
-            <p className="text-sm font-semibold text-foreground">{captions.scan}</p>
-            <p className="text-xs text-muted-foreground">{captions.hint}</p>
+            <p className="text-lg font-bold text-foreground">{captions.scan}</p>
+            <p className="text-sm text-muted-foreground">{captions.hint}</p>
           </div>
 
           <div className="w-full space-y-2 mb-4">
