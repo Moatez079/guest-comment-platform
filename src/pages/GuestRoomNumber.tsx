@@ -92,7 +92,7 @@ const GuestRoomNumber = () => {
             <div className="flex items-center gap-2 mb-1.5 justify-center">
               <Ship className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
-                {t(lang, "selectShip") || "Select Ship"}
+                {"Select Ship"}
               </span>
             </div>
             <Select value={selectedShipId} onValueChange={setSelectedShipId}>
