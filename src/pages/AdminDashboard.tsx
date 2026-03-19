@@ -75,6 +75,7 @@ const AdminDashboard = () => {
   const [shipId, setShipId] = useState<string | null>(null);
   const [shipName, setShipName] = useState<string>("");
   const [isSystemOwner, setIsSystemOwner] = useState(false);
+  const [userShips, setUserShips] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     checkAuthAndLoad();
