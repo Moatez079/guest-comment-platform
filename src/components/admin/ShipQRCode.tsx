@@ -209,6 +209,25 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
             </Select>
           </div>
 
+          {/* QR Size Slider */}
+          <div className="w-full mb-4">
+            <label className="text-sm font-medium text-foreground mb-1.5 block">
+              QR Code Size: {qrScale}%
+            </label>
+            <div className="flex items-center gap-3">
+              <Minimize className="h-4 w-4 text-muted-foreground" />
+              <Slider
+                value={[qrScale]}
+                onValueChange={(v) => setQrScale(v[0])}
+                min={30}
+                max={95}
+                step={5}
+                className="flex-1"
+              />
+              <Maximize className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+
           <div
             ref={qrRef}
             className="p-6 bg-white rounded-2xl border-2 border-border shadow-inner mb-2"
