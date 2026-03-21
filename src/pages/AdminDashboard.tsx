@@ -5,6 +5,7 @@ import {
   Download, Trash2, Brain, TrendingUp, Star, Ship,
   RefreshCw, ChevronRight, AlertTriangle, ThumbsUp, Globe, Loader2, X, QrCode
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -76,6 +77,7 @@ const AdminDashboard = () => {
   const [shipName, setShipName] = useState<string>("");
   const [isSystemOwner, setIsSystemOwner] = useState(false);
   const [userShips, setUserShips] = useState<{ id: string; name: string }[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -160,6 +162,7 @@ const AdminDashboard = () => {
     setShipId(newShipId);
     setShipName(matched?.name || "");
     setAiReport(null);
+    setSelectedIds(new Set());
     loadFeedback(newShipId);
   };
 
@@ -235,6 +238,46 @@ const AdminDashboard = () => {
       setFeedbackList([]);
       setAiReport(null);
       toast({ title: "Deleted", description: "All feedback has been deleted." });
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === feedbackList.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(feedbackList.map((f) => f.id)));
+    }
+  };
+
+  const deleteSelectedFeedback = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedIds.size} selected feedback item(s)?`)) return;
+
+    const selectedFeedback = feedbackList.filter((f) => selectedIds.has(f.id));
+    const filePaths = selectedFeedback
+      .flatMap((f) => [f.pdf_url, f.image_url])
+      .filter(Boolean) as string[];
+
+    if (filePaths.length > 0) {
+      await supabase.storage.from("feedback-files").remove(filePaths);
+    }
+
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from("feedback").delete().in("id", ids);
+    if (error) {
+      toast({ title: "Error", description: "Failed to delete selected feedback.", variant: "destructive" });
+    } else {
+      setFeedbackList((prev) => prev.filter((f) => !selectedIds.has(f.id)));
+      setSelectedIds(new Set());
+      toast({ title: "Deleted", description: `${ids.length} feedback item(s) deleted.` });
     }
   };
 
@@ -464,15 +507,35 @@ const AdminDashboard = () => {
               ) : (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5" /> Recent Feedback
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" /> Recent Feedback
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={toggleSelectAll}>
+                          <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
+                          {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
+                        </Button>
+                        {selectedIds.size > 0 && (
+                          <Button variant="outline" size="sm" className="gap-1 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
+                            <Trash2 className="h-3 w-3" /> Delete ({selectedIds.size})
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       {feedbackList.slice(0, 10).map((f) => (
-                        <div key={f.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
+                        <div
+                          key={f.id}
+                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                            selectedIds.has(f.id) ? "bg-primary/5 border-primary/30" : "bg-muted/50 border-border"
+                          }`}
+                          onClick={() => toggleSelect(f.id)}
+                        >
                           <div className="flex items-center gap-3">
+                            <Checkbox checked={selectedIds.has(f.id)} />
                             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                               {f.room_number}
                             </div>
@@ -489,7 +552,8 @@ const AdminDashboard = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="gap-1"
-                                onClick={async () => {
+                                onClick={async (e) => {
+                                  e.stopPropagation();
                                   const { data } = await supabase.storage.from("feedback-files").download(f.pdf_url!);
                                   if (data) {
                                     const url = URL.createObjectURL(data);
@@ -504,7 +568,6 @@ const AdminDashboard = () => {
                                 <Download className="h-3 w-3" /> PDF
                               </Button>
                             )}
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </div>
                       ))}
@@ -687,7 +750,16 @@ const AdminDashboard = () => {
             <motion.div key="pdfs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-display font-bold text-foreground">Feedback PDFs</h1>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="ghost" size="sm" className="gap-1" onClick={toggleSelectAll}>
+                    <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
+                    {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
+                  </Button>
+                  {selectedIds.size > 0 && (
+                    <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
+                      <Trash2 className="h-4 w-4" /> Delete Selected ({selectedIds.size})
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" className="gap-2" onClick={downloadAllPdfs}>
                     <Download className="h-4 w-4" /> Download All
                   </Button>
@@ -701,10 +773,17 @@ const AdminDashboard = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {feedbackList.map((f) => (
-                    <Card key={f.id} className="hover:shadow-md transition-shadow">
+                    <Card
+                      key={f.id}
+                      className={`hover:shadow-md transition-shadow cursor-pointer ${selectedIds.has(f.id) ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+                      onClick={() => toggleSelect(f.id)}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-lg font-bold text-foreground">Room {f.room_number}</span>
+                          <div className="flex items-center gap-2">
+                            <Checkbox checked={selectedIds.has(f.id)} />
+                            <span className="text-lg font-bold text-foreground">Room {f.room_number}</span>
+                          </div>
                           <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted">{f.language.toUpperCase()}</span>
                         </div>
                         <div className="text-xs text-muted-foreground mb-3">{new Date(f.submitted_at).toLocaleString()}</div>
@@ -713,7 +792,8 @@ const AdminDashboard = () => {
                             variant="outline"
                             size="sm"
                             className="w-full gap-2"
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.stopPropagation();
                               const { data } = await supabase.storage.from("feedback-files").download(f.pdf_url!);
                               if (data) {
                                 const url = URL.createObjectURL(data);
