@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, BarChart3, FileText, Users, Settings, LogOut,
   Download, Trash2, Brain, TrendingUp, Star, Ship,
-  RefreshCw, ChevronRight, AlertTriangle, ThumbsUp, Globe, Loader2, X, QrCode
+  RefreshCw, ChevronRight, AlertTriangle, ThumbsUp, Globe, Loader2, X, QrCode, CheckSquare, Square
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
