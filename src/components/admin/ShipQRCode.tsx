@@ -105,21 +105,21 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
       // Scan caption – bold & large
       ctx.fillStyle = "#1e3a5f";
       ctx.font = "bold 64px sans-serif";
-      ctx.fillText(captions.scan, cx, 2400);
+      ctx.fillText(captions.scan, cx, textY);
 
       // Language hint
       ctx.fillStyle = "#999999";
       ctx.font = "44px sans-serif";
-      ctx.fillText(captions.hint, cx, 2500);
+      ctx.fillText(captions.hint, cx, textY + 100);
 
       // Bottom divider
       ctx.fillStyle = "#c49a3c";
-      ctx.fillRect(200, 2620, W - 400, 4);
+      ctx.fillRect(200, textY + 220, W - 400, 4);
 
       // Footer
       ctx.fillStyle = "#aaaaaa";
       ctx.font = "36px sans-serif";
-      ctx.fillText(captions.footer, cx, 2700);
+      ctx.fillText(captions.footer, cx, textY + 300);
 
       const link = document.createElement("a");
       link.download = `${shipName.replace(/\s+/g, "_")}_QR_Code_A4.png`;
