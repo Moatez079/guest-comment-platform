@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Printer, Copy, Check } from "lucide-react";
+import { Download, Printer, Copy, Check, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 
 interface ShipQRCodeProps {
@@ -52,6 +53,7 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [captionLang, setCaptionLang] = useState("en");
+  const [qrScale, setQrScale] = useState(75); // percentage of A4 width
 
   const feedbackUrl = `${window.location.origin}/ship/${shipId}/feedback/lang`;
   const captions = qrCaptions[captionLang] || qrCaptions.en;
@@ -92,29 +94,32 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
       ctx.font = "52px sans-serif";
       ctx.fillText("Guest Feedback", cx, 330);
 
-      // QR code – large, centered (1800x1800)
-      const qrSize = 1800;
+      // QR code – sized by user slider
+      const qrSize = Math.round(W * (qrScale / 100));
       const qrX = (W - qrSize) / 2;
-      ctx.drawImage(img, qrX, 450, qrSize, qrSize);
+      const qrY = 450;
+      ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+
+      const textY = qrY + qrSize + 80;
 
       // Scan caption – bold & large
       ctx.fillStyle = "#1e3a5f";
       ctx.font = "bold 64px sans-serif";
-      ctx.fillText(captions.scan, cx, 2400);
+      ctx.fillText(captions.scan, cx, textY);
 
       // Language hint
       ctx.fillStyle = "#999999";
       ctx.font = "44px sans-serif";
-      ctx.fillText(captions.hint, cx, 2500);
+      ctx.fillText(captions.hint, cx, textY + 100);
 
       // Bottom divider
       ctx.fillStyle = "#c49a3c";
-      ctx.fillRect(200, 2620, W - 400, 4);
+      ctx.fillRect(200, textY + 220, W - 400, 4);
 
       // Footer
       ctx.fillStyle = "#aaaaaa";
       ctx.font = "36px sans-serif";
-      ctx.fillText(captions.footer, cx, 2700);
+      ctx.fillText(captions.footer, cx, textY + 300);
 
       const link = document.createElement("a");
       link.download = `${shipName.replace(/\s+/g, "_")}_QR_Code_A4.png`;
@@ -146,7 +151,7 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
           .gold-line { width: 160px; height: 4px; background: #c49a3c; margin: 12px auto 12px; }
           .subtitle { color: #666; font-size: 28px; margin-bottom: 20px; font-family: sans-serif; }
           .qr-container { padding: 10px; }
-          .qr-container svg { width: 150mm !important; height: 150mm !important; }
+          .qr-container svg { width: ${qrScale * 2.1}mm !important; height: ${qrScale * 2.1}mm !important; }
           .scan-text { color: #1e3a5f; font-size: 32px; font-weight: bold; margin-top: 16px; font-family: sans-serif; }
           .lang-text { color: #999; font-size: 22px; margin-top: 8px; font-family: sans-serif; }
           .footer { margin-top: 24px; color: #aaa; font-size: 18px; border-top: 3px solid #c49a3c; padding-top: 12px; font-family: sans-serif; width: 80%; text-align: center; }
@@ -202,6 +207,25 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* QR Size Slider */}
+          <div className="w-full mb-4">
+            <label className="text-sm font-medium text-foreground mb-1.5 block">
+              QR Code Size: {qrScale}%
+            </label>
+            <div className="flex items-center gap-3">
+              <Minimize className="h-4 w-4 text-muted-foreground" />
+              <Slider
+                value={[qrScale]}
+                onValueChange={(v) => setQrScale(v[0])}
+                min={30}
+                max={95}
+                step={5}
+                className="flex-1"
+              />
+              <Maximize className="h-4 w-4 text-muted-foreground" />
+            </div>
           </div>
 
           <div
