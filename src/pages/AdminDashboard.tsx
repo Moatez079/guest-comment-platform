@@ -749,7 +749,16 @@ const AdminDashboard = () => {
             <motion.div key="pdfs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-display font-bold text-foreground">Feedback PDFs</h1>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="ghost" size="sm" className="gap-1" onClick={toggleSelectAll}>
+                    <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
+                    {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
+                  </Button>
+                  {selectedIds.size > 0 && (
+                    <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
+                      <Trash2 className="h-4 w-4" /> Delete Selected ({selectedIds.size})
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" className="gap-2" onClick={downloadAllPdfs}>
                     <Download className="h-4 w-4" /> Download All
                   </Button>
@@ -763,10 +772,17 @@ const AdminDashboard = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {feedbackList.map((f) => (
-                    <Card key={f.id} className="hover:shadow-md transition-shadow">
+                    <Card
+                      key={f.id}
+                      className={`hover:shadow-md transition-shadow cursor-pointer ${selectedIds.has(f.id) ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+                      onClick={() => toggleSelect(f.id)}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-lg font-bold text-foreground">Room {f.room_number}</span>
+                          <div className="flex items-center gap-2">
+                            <Checkbox checked={selectedIds.has(f.id)} />
+                            <span className="text-lg font-bold text-foreground">Room {f.room_number}</span>
+                          </div>
                           <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted">{f.language.toUpperCase()}</span>
                         </div>
                         <div className="text-xs text-muted-foreground mb-3">{new Date(f.submitted_at).toLocaleString()}</div>
@@ -775,7 +791,8 @@ const AdminDashboard = () => {
                             variant="outline"
                             size="sm"
                             className="w-full gap-2"
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              e.stopPropagation();
                               const { data } = await supabase.storage.from("feedback-files").download(f.pdf_url!);
                               if (data) {
                                 const url = URL.createObjectURL(data);
