@@ -94,10 +94,13 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
       ctx.font = "52px sans-serif";
       ctx.fillText("Guest Feedback", cx, 330);
 
-      // QR code – large, centered (1800x1800)
-      const qrSize = 1800;
+      // QR code – sized by user slider
+      const qrSize = Math.round(W * (qrScale / 100));
       const qrX = (W - qrSize) / 2;
-      ctx.drawImage(img, qrX, 450, qrSize, qrSize);
+      const qrY = 450;
+      ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+
+      const textY = qrY + qrSize + 80;
 
       // Scan caption – bold & large
       ctx.fillStyle = "#1e3a5f";
