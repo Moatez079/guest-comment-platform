@@ -162,6 +162,7 @@ const AdminDashboard = () => {
     setShipId(newShipId);
     setShipName(matched?.name || "");
     setAiReport(null);
+    setSelectedIds(new Set());
     loadFeedback(newShipId);
   };
 
