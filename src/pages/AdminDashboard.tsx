@@ -506,15 +506,35 @@ const AdminDashboard = () => {
               ) : (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5" /> Recent Feedback
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" /> Recent Feedback
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={toggleSelectAll}>
+                          <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
+                          {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
+                        </Button>
+                        {selectedIds.size > 0 && (
+                          <Button variant="outline" size="sm" className="gap-1 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
+                            <Trash2 className="h-3 w-3" /> Delete ({selectedIds.size})
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       {feedbackList.slice(0, 10).map((f) => (
-                        <div key={f.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
+                        <div
+                          key={f.id}
+                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                            selectedIds.has(f.id) ? "bg-primary/5 border-primary/30" : "bg-muted/50 border-border"
+                          }`}
+                          onClick={() => toggleSelect(f.id)}
+                        >
                           <div className="flex items-center gap-3">
+                            <Checkbox checked={selectedIds.has(f.id)} />
                             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                               {f.room_number}
                             </div>
@@ -531,7 +551,8 @@ const AdminDashboard = () => {
                                 variant="ghost"
                                 size="sm"
                                 className="gap-1"
-                                onClick={async () => {
+                                onClick={async (e) => {
+                                  e.stopPropagation();
                                   const { data } = await supabase.storage.from("feedback-files").download(f.pdf_url!);
                                   if (data) {
                                     const url = URL.createObjectURL(data);
@@ -546,7 +567,6 @@ const AdminDashboard = () => {
                                 <Download className="h-3 w-3" /> PDF
                               </Button>
                             )}
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </div>
                       ))}
