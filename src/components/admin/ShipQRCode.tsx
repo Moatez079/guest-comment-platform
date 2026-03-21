@@ -53,6 +53,7 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [captionLang, setCaptionLang] = useState("en");
+  const [qrScale, setQrScale] = useState(75); // percentage of A4 width
 
   const feedbackUrl = `${window.location.origin}/ship/${shipId}/feedback/lang`;
   const captions = qrCaptions[captionLang] || qrCaptions.en;
