@@ -151,7 +151,7 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
           .gold-line { width: 160px; height: 4px; background: #c49a3c; margin: 12px auto 12px; }
           .subtitle { color: #666; font-size: 28px; margin-bottom: 20px; font-family: sans-serif; }
           .qr-container { padding: 10px; }
-          .qr-container svg { width: 150mm !important; height: 150mm !important; }
+          .qr-container svg { width: ${qrScale * 2.1}mm !important; height: ${qrScale * 2.1}mm !important; }
           .scan-text { color: #1e3a5f; font-size: 32px; font-weight: bold; margin-top: 16px; font-family: sans-serif; }
           .lang-text { color: #999; font-size: 22px; margin-top: 8px; font-family: sans-serif; }
           .footer { margin-top: 24px; color: #aaa; font-size: 18px; border-top: 3px solid #c49a3c; padding-top: 12px; font-family: sans-serif; width: 80%; text-align: center; }
