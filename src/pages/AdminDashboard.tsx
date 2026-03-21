@@ -240,6 +240,46 @@ const AdminDashboard = () => {
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === feedbackList.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(feedbackList.map((f) => f.id)));
+    }
+  };
+
+  const deleteSelectedFeedback = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedIds.size} selected feedback item(s)?`)) return;
+
+    const selectedFeedback = feedbackList.filter((f) => selectedIds.has(f.id));
+    const filePaths = selectedFeedback
+      .flatMap((f) => [f.pdf_url, f.image_url])
+      .filter(Boolean) as string[];
+
+    if (filePaths.length > 0) {
+      await supabase.storage.from("feedback-files").remove(filePaths);
+    }
+
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from("feedback").delete().in("id", ids);
+    if (error) {
+      toast({ title: "Error", description: "Failed to delete selected feedback.", variant: "destructive" });
+    } else {
+      setFeedbackList((prev) => prev.filter((f) => !selectedIds.has(f.id)));
+      setSelectedIds(new Set());
+      toast({ title: "Deleted", description: `${ids.length} feedback item(s) deleted.` });
+    }
+  };
+
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [regeneratingPdfs, setRegeneratingPdfs] = useState(false);
 
