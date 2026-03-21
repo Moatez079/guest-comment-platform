@@ -61,54 +61,69 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
     const svg = qrRef.current.querySelector("svg");
     if (!svg) return;
 
+    // A4 at 300 DPI = 2480 x 3508
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
     const svgData = new XMLSerializer().serializeToString(svg);
     const img = new Image();
 
-    canvas.width = 1200;
-    canvas.height = 1500;
+    const W = 2480;
+    const H = 3508;
+    canvas.width = W;
+    canvas.height = H;
+    const cx = W / 2;
 
     img.onload = () => {
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, W, H);
 
+      // Ship name – large & bold
       ctx.fillStyle = "#1e3a5f";
-      ctx.font = "bold 48px serif";
+      ctx.font = "bold 96px serif";
       ctx.textAlign = "center";
-      ctx.fillText(shipName, 600, 80);
+      ctx.fillText(shipName, cx, 200);
 
+      // Gold divider
       ctx.fillStyle = "#c49a3c";
-      ctx.fillRect(500, 100, 200, 4);
+      ctx.fillRect(cx - 200, 240, 400, 6);
 
+      // Subtitle
       ctx.fillStyle = "#666666";
-      ctx.font = "28px sans-serif";
-      ctx.fillText("Guest Feedback", 600, 150);
+      ctx.font = "52px sans-serif";
+      ctx.fillText("Guest Feedback", cx, 330);
 
-      ctx.drawImage(img, 200, 200, 800, 800);
+      // QR code – large, centered (1800x1800)
+      const qrSize = 1800;
+      const qrX = (W - qrSize) / 2;
+      ctx.drawImage(img, qrX, 450, qrSize, qrSize);
 
+      // Scan caption – bold & large
       ctx.fillStyle = "#1e3a5f";
-      ctx.font = "bold 32px sans-serif";
-      ctx.fillText(captions.scan, 600, 1100);
+      ctx.font = "bold 64px sans-serif";
+      ctx.fillText(captions.scan, cx, 2400);
 
+      // Language hint
       ctx.fillStyle = "#999999";
-      ctx.font = "22px sans-serif";
-      ctx.fillText(captions.hint, 600, 1150);
+      ctx.font = "44px sans-serif";
+      ctx.fillText(captions.hint, cx, 2500);
 
+      // Bottom divider
       ctx.fillStyle = "#c49a3c";
-      ctx.fillRect(100, 1220, 1000, 2);
+      ctx.fillRect(200, 2620, W - 400, 4);
+
+      // Footer
       ctx.fillStyle = "#aaaaaa";
-      ctx.font = "18px sans-serif";
-      ctx.fillText(captions.footer, 600, 1260);
+      ctx.font = "36px sans-serif";
+      ctx.fillText(captions.footer, cx, 2700);
 
       const link = document.createElement("a");
-      link.download = `${shipName.replace(/\s+/g, "_")}_QR_Code.png`;
+      link.download = `${shipName.replace(/\s+/g, "_")}_QR_Code_A4.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     };
 
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-    toast({ title: "QR Code Downloaded", description: "Ready to print and display!" });
+    toast({ title: "QR Code Downloaded", description: "A4 print-ready format!" });
   };
 
   const printQR = () => {
