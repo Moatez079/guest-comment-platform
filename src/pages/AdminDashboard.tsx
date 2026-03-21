@@ -77,6 +77,7 @@ const AdminDashboard = () => {
   const [shipName, setShipName] = useState<string>("");
   const [isSystemOwner, setIsSystemOwner] = useState(false);
   const [userShips, setUserShips] = useState<{ id: string; name: string }[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     checkAuthAndLoad();
