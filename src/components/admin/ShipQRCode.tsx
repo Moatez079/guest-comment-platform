@@ -136,17 +136,20 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
       <head>
         <title>${shipName} - QR Code</title>
         <style>
+          @page { size: A4; margin: 0; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; margin: 0; font-family: Georgia, serif; background: white;
+            width: 210mm; height: 297mm; margin: 0 auto; font-family: Georgia, serif; background: white;
           }
-          h1 { color: #1e3a5f; font-size: 36px; margin-bottom: 4px; }
-          .gold-line { width: 100px; height: 3px; background: #c49a3c; margin: 0 auto 16px; }
-          .subtitle { color: #666; font-size: 20px; margin-bottom: 40px; font-family: sans-serif; }
-          .qr-container { padding: 20px; }
-          .scan-text { color: #1e3a5f; font-size: 24px; font-weight: bold; margin-top: 30px; font-family: sans-serif; }
-          .lang-text { color: #999; font-size: 16px; margin-top: 8px; font-family: sans-serif; }
-          .footer { margin-top: 40px; color: #aaa; font-size: 14px; border-top: 1px solid #c49a3c; padding-top: 16px; font-family: sans-serif; }
+          h1 { color: #1e3a5f; font-size: 48px; font-weight: bold; margin-top: 24px; }
+          .gold-line { width: 160px; height: 4px; background: #c49a3c; margin: 12px auto 12px; }
+          .subtitle { color: #666; font-size: 28px; margin-bottom: 20px; font-family: sans-serif; }
+          .qr-container { padding: 10px; }
+          .qr-container svg { width: 150mm !important; height: 150mm !important; }
+          .scan-text { color: #1e3a5f; font-size: 32px; font-weight: bold; margin-top: 16px; font-family: sans-serif; }
+          .lang-text { color: #999; font-size: 22px; margin-top: 8px; font-family: sans-serif; }
+          .footer { margin-top: 24px; color: #aaa; font-size: 18px; border-top: 3px solid #c49a3c; padding-top: 12px; font-family: sans-serif; width: 80%; text-align: center; }
           @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         </style>
       </head>
