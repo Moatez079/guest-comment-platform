@@ -1,0 +1,1 @@
+ALTER TABLE public.feedback ADD COLUMN guest_name text DEFAULT NULL, ADD COLUMN company_name text DEFAULT NULL;
