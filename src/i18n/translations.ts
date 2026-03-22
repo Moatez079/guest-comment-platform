@@ -160,6 +160,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "¿Alguna sugerencia para mejorar?",
     welcome: "Bienvenido a Bordo",
     welcomeSubtitle: "Valoramos sus comentarios para hacer su experiencia de crucero inolvidable.",
+    guestName: "Su Nombre",
+    companyName: "Empresa / Agencia de Viajes",
+    guestNamePlaceholder: "Ingrese su nombre",
+    companyNamePlaceholder: "Ingrese el nombre de la empresa o agencia",
   },
   it: {
     guestFeedback: "Feedback degli Ospiti",
