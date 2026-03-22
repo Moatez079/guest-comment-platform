@@ -174,6 +174,8 @@ const UserManagement = () => {
 
   const toggleDeletePermission = async (user: UserProfile) => {
     const newValue = !user.can_delete_feedback;
+    setActionLoading(user.user_id);
+
     const { error } = await supabase
       .from("profiles")
       .update({ can_delete_feedback: newValue } as any)
@@ -190,6 +192,8 @@ const UserManagement = () => {
       });
       await loadData();
     }
+
+    setActionLoading(null);
   };
 
   const getStatusBadge = (status: string) => {
