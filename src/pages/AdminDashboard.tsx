@@ -548,13 +548,13 @@ const AdminDashboard = () => {
                       {feedbackList.slice(0, 10).map((f) => (
                         <div
                           key={f.id}
-                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                          className={`flex items-center justify-between p-3 rounded-lg border ${canDeleteFeedback ? "cursor-pointer" : ""} transition-colors ${
                             selectedIds.has(f.id) ? "bg-primary/5 border-primary/30" : "bg-muted/50 border-border"
                           }`}
-                          onClick={() => toggleSelect(f.id)}
+                          onClick={() => canDeleteFeedback && toggleSelect(f.id)}
                         >
                           <div className="flex items-center gap-3">
-                            <Checkbox checked={selectedIds.has(f.id)} />
+                            {canDeleteFeedback && <Checkbox checked={selectedIds.has(f.id)} />}
                             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                               {f.room_number}
                             </div>
