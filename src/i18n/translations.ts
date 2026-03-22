@@ -529,6 +529,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "सुधार के लिए कोई सुझाव?",
     welcome: "जहाज पर आपका स्वागत है",
     welcomeSubtitle: "आपके क्रूज अनुभव को अविस्मरणीय बनाने के लिए हम आपकी प्रतिक्रिया को महत्व देते हैं।",
+    guestName: "आपका नाम",
+    companyName: "कंपनी / ट्रैवल एजेंसी",
+    guestNamePlaceholder: "अपना नाम दर्ज करें",
+    companyNamePlaceholder: "कंपनी या एजेंसी का नाम दर्ज करें",
   },
   ar: {
     guestFeedback: "ملاحظات الضيوف",
