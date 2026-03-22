@@ -74,6 +74,12 @@ type TranslationKeys = {
   // Welcome
   welcome: string;
   welcomeSubtitle: string;
+  
+  // Guest info
+  guestName: string;
+  companyName: string;
+  guestNamePlaceholder: string;
+  companyNamePlaceholder: string;
 };
 
 export const translations: Record<string, TranslationKeys> = {
