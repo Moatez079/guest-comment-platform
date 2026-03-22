@@ -447,6 +447,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "改善の提案はありますか？",
     welcome: "ようこそ",
     welcomeSubtitle: "クルーズ体験を忘れられないものにするために、フィードバックを大切にしています。",
+    guestName: "お名前",
+    companyName: "会社 / 旅行代理店",
+    guestNamePlaceholder: "お名前を入力してください",
+    companyNamePlaceholder: "会社名または代理店名を入力してください",
   },
   zh: {
     guestFeedback: "宾客反馈",
