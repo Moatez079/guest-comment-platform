@@ -26,6 +26,7 @@ type UserProfile = {
   full_name: string | null;
   status: string;
   created_at: string;
+  can_delete_feedback: boolean;
   roles: { role: string; ship_id: string | null }[];
   ship_memberships: { ship_id: string; ship_name: string }[];
 };
