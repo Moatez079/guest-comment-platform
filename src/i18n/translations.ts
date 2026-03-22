@@ -693,6 +693,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "İyileştirme önerileriniz var mı?",
     welcome: "Gemiye Hoş Geldiniz",
     welcomeSubtitle: "Kruvaziyer deneyiminizi unutulmaz kılmak için geri bildiriminize değer veriyoruz.",
+    guestName: "Adınız",
+    companyName: "Şirket / Seyahat Acentası",
+    guestNamePlaceholder: "Adınızı girin",
+    companyNamePlaceholder: "Şirket veya acenta adını girin",
   },
 };
 
