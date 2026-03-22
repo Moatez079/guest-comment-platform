@@ -570,6 +570,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "أي اقتراحات للتحسين؟",
     welcome: "مرحباً على متن السفينة",
     welcomeSubtitle: "نقدر ملاحظاتك لجعل تجربة رحلتك البحرية لا تُنسى.",
+    guestName: "اسمك",
+    companyName: "الشركة / وكالة السفر",
+    guestNamePlaceholder: "أدخل اسمك",
+    companyNamePlaceholder: "أدخل اسم الشركة أو الوكالة",
   },
   pt: {
     guestFeedback: "Feedback do Hóspede",
