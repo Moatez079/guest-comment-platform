@@ -100,6 +100,18 @@ const AdminDashboard = () => {
     
     if (roles && roles.length > 0) {
       setIsSystemOwner(true);
+      setCanDeleteFeedback(true);
+    }
+
+    // Check can_delete_feedback permission from profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("can_delete_feedback")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    if (profile?.can_delete_feedback) {
+      setCanDeleteFeedback(true);
     }
 
     // Check for ship query param first
