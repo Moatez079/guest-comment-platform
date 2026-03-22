@@ -147,6 +147,8 @@ const GuestFeedbackForm = () => {
           comments: translatedComments as any,
           pdf_url: pdfPath,
           image_url: imageUrl,
+          guest_name: guestName || null,
+          company_name: companyName || null,
         }),
       ]);
 
