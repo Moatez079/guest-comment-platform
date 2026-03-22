@@ -800,13 +800,13 @@ const AdminDashboard = () => {
                   {feedbackList.map((f) => (
                     <Card
                       key={f.id}
-                      className={`hover:shadow-md transition-shadow cursor-pointer ${selectedIds.has(f.id) ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
-                      onClick={() => toggleSelect(f.id)}
+                      className={`hover:shadow-md transition-shadow ${canDeleteFeedback ? "cursor-pointer" : ""} ${selectedIds.has(f.id) ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+                      onClick={() => canDeleteFeedback && toggleSelect(f.id)}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <Checkbox checked={selectedIds.has(f.id)} />
+                            {canDeleteFeedback && <Checkbox checked={selectedIds.has(f.id)} />}
                             <span className="text-lg font-bold text-foreground">Room {f.room_number}</span>
                           </div>
                           <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted">{f.language.toUpperCase()}</span>
