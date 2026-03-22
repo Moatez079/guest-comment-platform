@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN can_delete_feedback boolean NOT NULL DEFAULT false;

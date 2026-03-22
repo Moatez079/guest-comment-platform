@@ -78,6 +78,7 @@ const AdminDashboard = () => {
   const [isSystemOwner, setIsSystemOwner] = useState(false);
   const [userShips, setUserShips] = useState<{ id: string; name: string }[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [canDeleteFeedback, setCanDeleteFeedback] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -99,6 +100,18 @@ const AdminDashboard = () => {
     
     if (roles && roles.length > 0) {
       setIsSystemOwner(true);
+      setCanDeleteFeedback(true);
+    }
+
+    // Check can_delete_feedback permission from profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("can_delete_feedback")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    if (profile?.can_delete_feedback) {
+      setCanDeleteFeedback(true);
     }
 
     // Check for ship query param first
@@ -459,9 +472,11 @@ const AdminDashboard = () => {
                     {regeneratingPdfs ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     {regeneratingPdfs ? "Regenerating..." : "Regenerate PDFs"}
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteAllFeedback}>
-                    <Trash2 className="h-4 w-4" /> Delete All
-                  </Button>
+                  {canDeleteFeedback && (
+                    <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteAllFeedback}>
+                      <Trash2 className="h-4 w-4" /> Delete All
+                    </Button>
+                  )}
                   <Button size="sm" className="gap-2 bg-cruise-gold hover:bg-cruise-gold/90 text-white" onClick={generateAiReport} disabled={aiLoading}>
                     {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
                     {aiLoading ? "Analyzing..." : "Generate AI Report"}
@@ -512,14 +527,18 @@ const AdminDashboard = () => {
                         <MessageSquare className="h-5 w-5" /> Recent Feedback
                       </CardTitle>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={toggleSelectAll}>
-                          <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
-                          {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
-                        </Button>
-                        {selectedIds.size > 0 && (
-                          <Button variant="outline" size="sm" className="gap-1 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
-                            <Trash2 className="h-3 w-3" /> Delete ({selectedIds.size})
-                          </Button>
+                        {canDeleteFeedback && (
+                          <>
+                            <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={toggleSelectAll}>
+                              <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
+                              {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
+                            </Button>
+                            {selectedIds.size > 0 && (
+                              <Button variant="outline" size="sm" className="gap-1 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
+                                <Trash2 className="h-3 w-3" /> Delete ({selectedIds.size})
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -529,13 +548,13 @@ const AdminDashboard = () => {
                       {feedbackList.slice(0, 10).map((f) => (
                         <div
                           key={f.id}
-                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
+                          className={`flex items-center justify-between p-3 rounded-lg border ${canDeleteFeedback ? "cursor-pointer" : ""} transition-colors ${
                             selectedIds.has(f.id) ? "bg-primary/5 border-primary/30" : "bg-muted/50 border-border"
                           }`}
-                          onClick={() => toggleSelect(f.id)}
+                          onClick={() => canDeleteFeedback && toggleSelect(f.id)}
                         >
                           <div className="flex items-center gap-3">
-                            <Checkbox checked={selectedIds.has(f.id)} />
+                            {canDeleteFeedback && <Checkbox checked={selectedIds.has(f.id)} />}
                             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                               {f.room_number}
                             </div>
@@ -751,21 +770,27 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-display font-bold text-foreground">Feedback PDFs</h1>
                 <div className="flex gap-2 flex-wrap">
-                  <Button variant="ghost" size="sm" className="gap-1" onClick={toggleSelectAll}>
-                    <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
-                    {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
-                  </Button>
-                  {selectedIds.size > 0 && (
-                    <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
-                      <Trash2 className="h-4 w-4" /> Delete Selected ({selectedIds.size})
-                    </Button>
+                  {canDeleteFeedback && (
+                    <>
+                      <Button variant="ghost" size="sm" className="gap-1" onClick={toggleSelectAll}>
+                        <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
+                        {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
+                      </Button>
+                      {selectedIds.size > 0 && (
+                        <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
+                          <Trash2 className="h-4 w-4" /> Delete Selected ({selectedIds.size})
+                        </Button>
+                      )}
+                    </>
                   )}
                   <Button variant="outline" size="sm" className="gap-2" onClick={downloadAllPdfs}>
                     <Download className="h-4 w-4" /> Download All
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2 text-destructive" onClick={deleteAllFeedback}>
-                    <Trash2 className="h-4 w-4" /> Delete All
-                  </Button>
+                  {canDeleteFeedback && (
+                    <Button variant="outline" size="sm" className="gap-2 text-destructive" onClick={deleteAllFeedback}>
+                      <Trash2 className="h-4 w-4" /> Delete All
+                    </Button>
+                  )}
                 </div>
               </div>
               {feedbackList.length === 0 ? (
@@ -775,13 +800,13 @@ const AdminDashboard = () => {
                   {feedbackList.map((f) => (
                     <Card
                       key={f.id}
-                      className={`hover:shadow-md transition-shadow cursor-pointer ${selectedIds.has(f.id) ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
-                      onClick={() => toggleSelect(f.id)}
+                      className={`hover:shadow-md transition-shadow ${canDeleteFeedback ? "cursor-pointer" : ""} ${selectedIds.has(f.id) ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+                      onClick={() => canDeleteFeedback && toggleSelect(f.id)}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <Checkbox checked={selectedIds.has(f.id)} />
+                            {canDeleteFeedback && <Checkbox checked={selectedIds.has(f.id)} />}
                             <span className="text-lg font-bold text-foreground">Room {f.room_number}</span>
                           </div>
                           <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted">{f.language.toUpperCase()}</span>
