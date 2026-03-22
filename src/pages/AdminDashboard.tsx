@@ -527,14 +527,18 @@ const AdminDashboard = () => {
                         <MessageSquare className="h-5 w-5" /> Recent Feedback
                       </CardTitle>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={toggleSelectAll}>
-                          <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
-                          {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
-                        </Button>
-                        {selectedIds.size > 0 && (
-                          <Button variant="outline" size="sm" className="gap-1 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
-                            <Trash2 className="h-3 w-3" /> Delete ({selectedIds.size})
-                          </Button>
+                        {canDeleteFeedback && (
+                          <>
+                            <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={toggleSelectAll}>
+                              <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
+                              {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
+                            </Button>
+                            {selectedIds.size > 0 && (
+                              <Button variant="outline" size="sm" className="gap-1 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
+                                <Trash2 className="h-3 w-3" /> Delete ({selectedIds.size})
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
