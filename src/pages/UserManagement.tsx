@@ -173,6 +173,26 @@ const UserManagement = () => {
     setActionLoading(null);
   };
 
+  const toggleDeletePermission = async (user: UserProfile) => {
+    const newValue = !user.can_delete_feedback;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ can_delete_feedback: newValue } as any)
+      .eq("user_id", user.user_id);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: newValue ? "🗑️ Delete Permission Granted" : "🔒 Read-Only Mode",
+        description: newValue
+          ? `${user.full_name || user.email} can now delete feedback.`
+          : `${user.full_name || user.email} is now read-only.`,
+      });
+      await loadData();
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
