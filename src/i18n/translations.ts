@@ -406,6 +406,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "개선 제안 사항이 있으신가요?",
     welcome: "승선을 환영합니다",
     welcomeSubtitle: "귀하의 크루즈 경험을 잊을 수 없게 만들기 위해 피드백을 소중히 여깁니다.",
+    guestName: "이름",
+    companyName: "회사 / 여행사",
+    guestNamePlaceholder: "이름을 입력하세요",
+    companyNamePlaceholder: "회사 또는 여행사 이름을 입력하세요",
   },
   ja: {
     guestFeedback: "ゲストフィードバック",
