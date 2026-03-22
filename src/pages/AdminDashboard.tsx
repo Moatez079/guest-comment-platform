@@ -78,6 +78,7 @@ const AdminDashboard = () => {
   const [isSystemOwner, setIsSystemOwner] = useState(false);
   const [userShips, setUserShips] = useState<{ id: string; name: string }[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [canDeleteFeedback, setCanDeleteFeedback] = useState(false);
 
   useEffect(() => {
     checkAuthAndLoad();
