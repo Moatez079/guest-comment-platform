@@ -770,21 +770,27 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-display font-bold text-foreground">Feedback PDFs</h1>
                 <div className="flex gap-2 flex-wrap">
-                  <Button variant="ghost" size="sm" className="gap-1" onClick={toggleSelectAll}>
-                    <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
-                    {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
-                  </Button>
-                  {selectedIds.size > 0 && (
-                    <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
-                      <Trash2 className="h-4 w-4" /> Delete Selected ({selectedIds.size})
-                    </Button>
+                  {canDeleteFeedback && (
+                    <>
+                      <Button variant="ghost" size="sm" className="gap-1" onClick={toggleSelectAll}>
+                        <Checkbox checked={selectedIds.size === feedbackList.length && feedbackList.length > 0} />
+                        {selectedIds.size === feedbackList.length ? "Deselect All" : "Select All"}
+                      </Button>
+                      {selectedIds.size > 0 && (
+                        <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteSelectedFeedback}>
+                          <Trash2 className="h-4 w-4" /> Delete Selected ({selectedIds.size})
+                        </Button>
+                      )}
+                    </>
                   )}
                   <Button variant="outline" size="sm" className="gap-2" onClick={downloadAllPdfs}>
                     <Download className="h-4 w-4" /> Download All
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2 text-destructive" onClick={deleteAllFeedback}>
-                    <Trash2 className="h-4 w-4" /> Delete All
-                  </Button>
+                  {canDeleteFeedback && (
+                    <Button variant="outline" size="sm" className="gap-2 text-destructive" onClick={deleteAllFeedback}>
+                      <Trash2 className="h-4 w-4" /> Delete All
+                    </Button>
+                  )}
                 </div>
               </div>
               {feedbackList.length === 0 ? (
