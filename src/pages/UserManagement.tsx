@@ -4,7 +4,6 @@ import {
   Users, CheckCircle, XCircle, Trash2, Loader2, Ship, Shield,
   UserCheck, UserX, Clock, ArrowLeft, ShieldCheck, ShieldOff
 } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -175,6 +174,8 @@ const UserManagement = () => {
 
   const toggleDeletePermission = async (user: UserProfile) => {
     const newValue = !user.can_delete_feedback;
+    setActionLoading(user.user_id);
+
     const { error } = await supabase
       .from("profiles")
       .update({ can_delete_feedback: newValue } as any)
@@ -191,6 +192,8 @@ const UserManagement = () => {
       });
       await loadData();
     }
+
+    setActionLoading(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -288,18 +291,21 @@ const UserManagement = () => {
                           <Badge className="bg-primary/10 text-primary border-primary/20">Owner</Badge>
                         ) : (
                           <>
-                            <div className="flex items-center gap-1.5 mr-2 border rounded-md px-2 py-1">
-                              {user.can_delete_feedback ? (
-                                <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
-                              ) : (
-                                <ShieldOff className="h-3.5 w-3.5 text-muted-foreground" />
-                              )}
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">Delete</span>
-                              <Switch
-                                checked={user.can_delete_feedback}
-                                onCheckedChange={() => toggleDeletePermission(user)}
-                                className="scale-75"
-                              />
+                            <div className="flex items-center gap-2 mr-2 flex-wrap">
+                              <Badge variant={user.can_delete_feedback ? "default" : "secondary"} className="gap-1">
+                                {user.can_delete_feedback ? <ShieldCheck className="h-3 w-3" /> : <ShieldOff className="h-3 w-3" />}
+                                {user.can_delete_feedback ? "Can Delete Feedback" : "Read Only"}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant={user.can_delete_feedback ? "outline" : "default"}
+                                className="gap-1"
+                                onClick={() => toggleDeletePermission(user)}
+                                disabled={actionLoading === user.user_id}
+                              >
+                                {user.can_delete_feedback ? <ShieldOff className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
+                                {user.can_delete_feedback ? "Set Read Only" : "Allow Delete"}
+                              </Button>
                             </div>
                             {user.status === "pending" && (
                               <Button
