@@ -488,6 +488,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "有什么改进建议吗？",
     welcome: "欢迎登船",
     welcomeSubtitle: "我们重视您的反馈，让您的邮轮体验难忘。",
+    guestName: "您的姓名",
+    companyName: "公司 / 旅行社",
+    guestNamePlaceholder: "请输入您的姓名",
+    companyNamePlaceholder: "请输入公司或旅行社名称",
   },
   hi: {
     guestFeedback: "अतिथि प्रतिक्रिया",
