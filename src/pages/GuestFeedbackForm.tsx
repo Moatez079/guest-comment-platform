@@ -20,6 +20,8 @@ const GuestFeedbackForm = () => {
   const [searchParams] = useSearchParams();
   const lang = searchParams.get("lang") || "en";
   const room = searchParams.get("room") || "";
+  const guestName = searchParams.get("guest_name") || "";
+  const companyName = searchParams.get("company_name") || "";
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [resolvedShipId, setResolvedShipId] = useState<string | null>(null);
@@ -145,6 +147,8 @@ const GuestFeedbackForm = () => {
           comments: translatedComments as any,
           pdf_url: pdfPath,
           image_url: imageUrl,
+          guest_name: guestName || null,
+          company_name: companyName || null,
         }),
       ]);
 

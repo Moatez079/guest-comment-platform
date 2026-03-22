@@ -74,6 +74,12 @@ type TranslationKeys = {
   // Welcome
   welcome: string;
   welcomeSubtitle: string;
+  
+  // Guest info
+  guestName: string;
+  companyName: string;
+  guestNamePlaceholder: string;
+  companyNamePlaceholder: string;
 };
 
 export const translations: Record<string, TranslationKeys> = {
@@ -113,6 +119,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "Any suggestions for improvement?",
     welcome: "Welcome Aboard",
     welcomeSubtitle: "We value your feedback to make your cruise experience unforgettable.",
+    guestName: "Your Name",
+    companyName: "Company / Travel Agency",
+    guestNamePlaceholder: "Enter your name",
+    companyNamePlaceholder: "Enter company or agency name",
   },
   es: {
     guestFeedback: "Opinión del Huésped",
@@ -150,6 +160,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "¿Alguna sugerencia para mejorar?",
     welcome: "Bienvenido a Bordo",
     welcomeSubtitle: "Valoramos sus comentarios para hacer su experiencia de crucero inolvidable.",
+    guestName: "Su Nombre",
+    companyName: "Empresa / Agencia de Viajes",
+    guestNamePlaceholder: "Ingrese su nombre",
+    companyNamePlaceholder: "Ingrese el nombre de la empresa o agencia",
   },
   it: {
     guestFeedback: "Feedback degli Ospiti",
@@ -187,6 +201,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "Suggerimenti per migliorare?",
     welcome: "Benvenuto a Bordo",
     welcomeSubtitle: "Apprezziamo il tuo feedback per rendere la tua crociera indimenticabile.",
+    guestName: "Il tuo Nome",
+    companyName: "Azienda / Agenzia di Viaggio",
+    guestNamePlaceholder: "Inserisci il tuo nome",
+    companyNamePlaceholder: "Inserisci il nome dell'azienda o agenzia",
   },
   fr: {
     guestFeedback: "Avis des Invités",
@@ -224,6 +242,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "Des suggestions d'amélioration ?",
     welcome: "Bienvenue à Bord",
     welcomeSubtitle: "Nous valorisons vos commentaires pour rendre votre croisière inoubliable.",
+    guestName: "Votre Nom",
+    companyName: "Entreprise / Agence de Voyage",
+    guestNamePlaceholder: "Entrez votre nom",
+    companyNamePlaceholder: "Entrez le nom de l'entreprise ou de l'agence",
   },
   de: {
     guestFeedback: "Gäste-Feedback",
@@ -261,6 +283,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "Verbesserungsvorschläge?",
     welcome: "Willkommen an Bord",
     welcomeSubtitle: "Wir schätzen Ihr Feedback, um Ihr Kreuzfahrterlebnis unvergesslich zu machen.",
+    guestName: "Ihr Name",
+    companyName: "Unternehmen / Reisebüro",
+    guestNamePlaceholder: "Geben Sie Ihren Namen ein",
+    companyNamePlaceholder: "Geben Sie den Firmen- oder Agenturnamen ein",
   },
   nl: {
     guestFeedback: "Gasten Feedback",
@@ -298,6 +324,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "Suggesties voor verbetering?",
     welcome: "Welkom aan Boord",
     welcomeSubtitle: "Wij waarderen uw feedback om uw cruise-ervaring onvergetelijk te maken.",
+    guestName: "Uw Naam",
+    companyName: "Bedrijf / Reisbureau",
+    guestNamePlaceholder: "Voer uw naam in",
+    companyNamePlaceholder: "Voer de bedrijfs- of bureaunaam in",
   },
   pl: {
     guestFeedback: "Opinia Gościa",
@@ -335,6 +365,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "Sugestie dotyczące poprawy?",
     welcome: "Witamy na Pokładzie",
     welcomeSubtitle: "Cenimy Twoją opinię, aby uczynić Twój rejs niezapomnianym.",
+    guestName: "Twoje Imię",
+    companyName: "Firma / Biuro Podróży",
+    guestNamePlaceholder: "Wpisz swoje imię",
+    companyNamePlaceholder: "Wpisz nazwę firmy lub biura",
   },
   ko: {
     guestFeedback: "고객 피드백",
@@ -372,6 +406,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "개선 제안 사항이 있으신가요?",
     welcome: "승선을 환영합니다",
     welcomeSubtitle: "귀하의 크루즈 경험을 잊을 수 없게 만들기 위해 피드백을 소중히 여깁니다.",
+    guestName: "이름",
+    companyName: "회사 / 여행사",
+    guestNamePlaceholder: "이름을 입력하세요",
+    companyNamePlaceholder: "회사 또는 여행사 이름을 입력하세요",
   },
   ja: {
     guestFeedback: "ゲストフィードバック",
@@ -409,6 +447,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "改善の提案はありますか？",
     welcome: "ようこそ",
     welcomeSubtitle: "クルーズ体験を忘れられないものにするために、フィードバックを大切にしています。",
+    guestName: "お名前",
+    companyName: "会社 / 旅行代理店",
+    guestNamePlaceholder: "お名前を入力してください",
+    companyNamePlaceholder: "会社名または代理店名を入力してください",
   },
   zh: {
     guestFeedback: "宾客反馈",
@@ -446,6 +488,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "有什么改进建议吗？",
     welcome: "欢迎登船",
     welcomeSubtitle: "我们重视您的反馈，让您的邮轮体验难忘。",
+    guestName: "您的姓名",
+    companyName: "公司 / 旅行社",
+    guestNamePlaceholder: "请输入您的姓名",
+    companyNamePlaceholder: "请输入公司或旅行社名称",
   },
   hi: {
     guestFeedback: "अतिथि प्रतिक्रिया",
@@ -483,6 +529,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "सुधार के लिए कोई सुझाव?",
     welcome: "जहाज पर आपका स्वागत है",
     welcomeSubtitle: "आपके क्रूज अनुभव को अविस्मरणीय बनाने के लिए हम आपकी प्रतिक्रिया को महत्व देते हैं।",
+    guestName: "आपका नाम",
+    companyName: "कंपनी / ट्रैवल एजेंसी",
+    guestNamePlaceholder: "अपना नाम दर्ज करें",
+    companyNamePlaceholder: "कंपनी या एजेंसी का नाम दर्ज करें",
   },
   ar: {
     guestFeedback: "ملاحظات الضيوف",
@@ -520,6 +570,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "أي اقتراحات للتحسين؟",
     welcome: "مرحباً على متن السفينة",
     welcomeSubtitle: "نقدر ملاحظاتك لجعل تجربة رحلتك البحرية لا تُنسى.",
+    guestName: "اسمك",
+    companyName: "الشركة / وكالة السفر",
+    guestNamePlaceholder: "أدخل اسمك",
+    companyNamePlaceholder: "أدخل اسم الشركة أو الوكالة",
   },
   pt: {
     guestFeedback: "Feedback do Hóspede",
@@ -557,6 +611,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "Sugestões para melhoria?",
     welcome: "Bem-vindo a Bordo",
     welcomeSubtitle: "Valorizamos seu feedback para tornar sua experiência de cruzeiro inesquecível.",
+    guestName: "Seu Nome",
+    companyName: "Empresa / Agência de Viagens",
+    guestNamePlaceholder: "Digite seu nome",
+    companyNamePlaceholder: "Digite o nome da empresa ou agência",
   },
   ru: {
     guestFeedback: "Отзыв гостя",
@@ -594,6 +652,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "Предложения по улучшению?",
     welcome: "Добро пожаловать на борт",
     welcomeSubtitle: "Мы ценим ваш отзыв, чтобы сделать круиз незабываемым.",
+    guestName: "Ваше Имя",
+    companyName: "Компания / Турагентство",
+    guestNamePlaceholder: "Введите ваше имя",
+    companyNamePlaceholder: "Введите название компании или агентства",
   },
   tr: {
     guestFeedback: "Misafir Geri Bildirimi",
@@ -631,6 +693,10 @@ export const translations: Record<string, TranslationKeys> = {
     generalCommentsPlaceholder: "İyileştirme önerileriniz var mı?",
     welcome: "Gemiye Hoş Geldiniz",
     welcomeSubtitle: "Kruvaziyer deneyiminizi unutulmaz kılmak için geri bildiriminize değer veriyoruz.",
+    guestName: "Adınız",
+    companyName: "Şirket / Seyahat Acentası",
+    guestNamePlaceholder: "Adınızı girin",
+    companyNamePlaceholder: "Şirket veya acenta adını girin",
   },
 };
 

@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           comments: Json
           comments_original: Json | null
+          company_name: string | null
+          guest_name: string | null
           id: string
           image_url: string | null
           language: string
@@ -30,6 +32,8 @@ export type Database = {
         Insert: {
           comments?: Json
           comments_original?: Json | null
+          company_name?: string | null
+          guest_name?: string | null
           id?: string
           image_url?: string | null
           language?: string
@@ -42,6 +46,8 @@ export type Database = {
         Update: {
           comments?: Json
           comments_original?: Json | null
+          company_name?: string | null
+          guest_name?: string | null
           id?: string
           image_url?: string | null
           language?: string

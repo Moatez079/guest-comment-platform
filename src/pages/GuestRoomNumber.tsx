@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { DoorOpen, Ship, Loader2 } from "lucide-react";
+import { DoorOpen, Ship, Loader2, User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const GuestRoomNumber = () => {
   const [room, setRoom] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const navigate = useNavigate();
   const { shipId } = useParams();
   const [searchParams] = useSearchParams();
@@ -26,7 +28,6 @@ const GuestRoomNumber = () => {
     const fetchShips = async () => {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-      // Always fetch all ships for the selector
       const { data: allShips } = await supabase
         .from("ships")
         .select("id, name")
@@ -35,7 +36,6 @@ const GuestRoomNumber = () => {
       if (allShips && allShips.length > 0) {
         setShips(allShips);
 
-        // Pre-select the ship from URL
         if (shipId && uuidRegex.test(shipId)) {
           const match = allShips.find((s) => s.id === shipId);
           setSelectedShipId(match ? match.id : allShips[0].id);
@@ -53,7 +53,13 @@ const GuestRoomNumber = () => {
 
   const handleContinue = () => {
     if (!room.trim() || !selectedShipId) return;
-    navigate(`/ship/${selectedShipId}/feedback?lang=${lang}&room=${room.trim()}`);
+    const params = new URLSearchParams({
+      lang,
+      room: room.trim(),
+      ...(guestName.trim() && { guest_name: guestName.trim() }),
+      ...(companyName.trim() && { company_name: companyName.trim() }),
+    });
+    navigate(`/ship/${selectedShipId}/feedback?${params.toString()}`);
   };
 
   const showShipSelector = ships.length > 1;
@@ -82,7 +88,7 @@ const GuestRoomNumber = () => {
           {t(lang, "welcomeSubtitle")}
         </p>
 
-        {/* Ship Selector - shown when multiple ships exist */}
+        {/* Ship Selector */}
         {loadingShips ? (
           <div className="flex justify-center mb-4">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -113,6 +119,43 @@ const GuestRoomNumber = () => {
           </div>
         ) : null}
 
+        {/* Guest Name */}
+        <div className="mb-3">
+          <div className="flex items-center gap-2 mb-1.5 justify-center">
+            <User className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">
+              {t(lang, "guestName")}
+            </span>
+          </div>
+          <Input
+            type="text"
+            placeholder={t(lang, "guestNamePlaceholder")}
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            className="text-center text-base h-12 border-2 focus:border-cruise-gold"
+            maxLength={100}
+          />
+        </div>
+
+        {/* Company Name */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-1.5 justify-center">
+            <Building2 className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">
+              {t(lang, "companyName")}
+            </span>
+          </div>
+          <Input
+            type="text"
+            placeholder={t(lang, "companyNamePlaceholder")}
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            className="text-center text-base h-12 border-2 focus:border-cruise-gold"
+            maxLength={100}
+          />
+        </div>
+
+        {/* Room Number */}
         <Input
           type="text"
           inputMode="numeric"
