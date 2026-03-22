@@ -283,11 +283,24 @@ const UserManagement = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {user.roles.some((r) => r.role === "system_owner") ? (
                           <Badge className="bg-primary/10 text-primary border-primary/20">Owner</Badge>
                         ) : (
                           <>
+                            <div className="flex items-center gap-1.5 mr-2 border rounded-md px-2 py-1">
+                              {user.can_delete_feedback ? (
+                                <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
+                              ) : (
+                                <ShieldOff className="h-3.5 w-3.5 text-muted-foreground" />
+                              )}
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">Delete</span>
+                              <Switch
+                                checked={user.can_delete_feedback}
+                                onCheckedChange={() => toggleDeletePermission(user)}
+                                className="scale-75"
+                              />
+                            </div>
                             {user.status === "pending" && (
                               <Button
                                 size="sm"
