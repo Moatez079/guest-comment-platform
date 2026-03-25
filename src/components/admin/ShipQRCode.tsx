@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Printer, Copy, Check, Maximize, Minimize } from "lucide-react";
+import { Download, Printer, Copy, Check, Maximize, Minimize, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 interface ShipQRCodeProps {
   shipId: string;
   shipName?: string;
+  qrToken?: string;
+  onRegenerateToken?: () => void;
 }
 
 const qrCaptions: Record<string, { scan: string; hint: string; footer: string }> = {
@@ -48,14 +50,29 @@ const captionLanguages = [
   { code: "tr", label: "🇹🇷 Türkçe" },
 ];
 
-const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps) => {
+const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise", qrToken, onRegenerateToken }: ShipQRCodeProps) => {
   const qrRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [captionLang, setCaptionLang] = useState("en");
   const [qrScale, setQrScale] = useState(75); // percentage of A4 width
+  const [regenerating, setRegenerating] = useState(false);
 
-  const feedbackUrl = `${window.location.origin}/ship/${shipId}/feedback/lang`;
+  const feedbackUrl = qrToken
+    ? `${window.location.origin}/ship/${shipId}/feedback/lang?token=${qrToken}`
+    : `${window.location.origin}/ship/${shipId}/feedback/lang`;
+
+  const handleRegenerate = async () => {
+    if (regenerating) return;
+    setRegenerating(true);
+    try {
+      if (onRegenerateToken) await onRegenerateToken();
+      toast({ title: "QR Code Regenerated", description: "Old QR codes are now invalid." });
+    } catch {
+      toast({ title: "Error", description: "Failed to regenerate QR code.", variant: "destructive" });
+    }
+    setRegenerating(false);
+  };
   const captions = qrCaptions[captionLang] || qrCaptions.en;
 
   const downloadQR = () => {
@@ -265,6 +282,19 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise" }: ShipQRCodeProps)
               <Printer className="h-4 w-4" /> Print
             </Button>
           </div>
+
+          <Button
+            onClick={handleRegenerate}
+            disabled={regenerating}
+            variant="destructive"
+            className="w-full mt-3 gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${regenerating ? "animate-spin" : ""}`} />
+            {regenerating ? "Regenerating..." : "Regenerate QR Code"}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center mt-1">
+            This will invalidate all previously printed QR codes
+          </p>
         </CardContent>
       </Card>
 
