@@ -1,0 +1,1 @@
+ALTER TABLE public.ships ADD COLUMN qr_token uuid NOT NULL DEFAULT gen_random_uuid();
