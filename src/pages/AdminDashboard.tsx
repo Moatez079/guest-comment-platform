@@ -79,6 +79,7 @@ const AdminDashboard = () => {
   const [userShips, setUserShips] = useState<{ id: string; name: string }[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [canDeleteFeedback, setCanDeleteFeedback] = useState(false);
+  const [qrToken, setQrToken] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -150,6 +151,9 @@ const AdminDashboard = () => {
         supabase.from("ships").select("name").eq("id", targetShipId).maybeSingle()
           .then(({ data }) => { if (data?.name) setShipName(data.name); });
       }
+      // Load QR token
+      supabase.from("ships").select("qr_token").eq("id", targetShipId).maybeSingle()
+        .then(({ data }) => { if (data?.qr_token) setQrToken(data.qr_token); });
       loadFeedback(targetShipId);
     } else {
       setLoading(false);
@@ -176,6 +180,9 @@ const AdminDashboard = () => {
     setShipName(matched?.name || "");
     setAiReport(null);
     setSelectedIds(new Set());
+    // Load QR token for new ship
+    supabase.from("ships").select("qr_token").eq("id", newShipId).maybeSingle()
+      .then(({ data }) => { if (data?.qr_token) setQrToken(data.qr_token); });
     loadFeedback(newShipId);
   };
 
@@ -849,7 +856,17 @@ const AdminDashboard = () => {
                 <h1 className="text-2xl font-display font-bold text-foreground">QR Code</h1>
                 <p className="text-sm text-muted-foreground">Generate and share QR codes for guest feedback.</p>
               </div>
-              <ShipQRCode shipId={shipId} shipName={shipName} />
+              <ShipQRCode
+                shipId={shipId}
+                shipName={shipName}
+                qrToken={qrToken || undefined}
+                onRegenerateToken={async () => {
+                  const newToken = crypto.randomUUID();
+                  const { error } = await supabase.from("ships").update({ qr_token: newToken }).eq("id", shipId);
+                  if (error) throw error;
+                  setQrToken(newToken);
+                }}
+              />
             </motion.div>
           )}
 
