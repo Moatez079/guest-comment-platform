@@ -90,7 +90,7 @@ async function translateText(text: string, sourceLang: string): Promise<string> 
       const lvRes = await fetch(`${host}/api/v1/${sourceLang}/en/${encodeURIComponent(text)}`);
       if (lvRes.ok) {
         const lv = await lvRes.json();
-        if (lv?.translation?.trim()) {
+        if (lv?.translation?.trim() && lv.translation.trim() !== text.trim()) {
           console.log("Translated via Lingva");
           return lv.translation;
         }
