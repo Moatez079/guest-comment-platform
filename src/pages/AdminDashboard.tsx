@@ -105,15 +105,16 @@ const AdminDashboard = () => {
     }
 
     // Check can_delete_feedback permission from profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("can_delete_feedback")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const [{ data: profile }, { data: viewerRoles }] = await Promise.all([
+      supabase.from("profiles").select("can_delete_feedback").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "viewer"),
+    ]);
+    const isViewer = !!viewerRoles && viewerRoles.length > 0 && !(roles && roles.length > 0);
     
-    if (profile?.can_delete_feedback) {
+    if (profile?.can_delete_feedback && !isViewer) {
       setCanDeleteFeedback(true);
     }
+    if (isViewer) setCanDeleteFeedback(false);
 
     // Check for ship query param first
     const shipParam = searchParams.get("ship");

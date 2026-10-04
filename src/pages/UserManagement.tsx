@@ -405,6 +405,7 @@ const UserManagement = () => {
                     <SelectItem value="ship_owner">Ship Owner</SelectItem>
                     <SelectItem value="manager">Manager</SelectItem>
                     <SelectItem value="reception">Reception</SelectItem>
+                    <SelectItem value="viewer">Viewer (read-only)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
