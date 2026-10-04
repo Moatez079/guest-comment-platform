@@ -1,0 +1,2 @@
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'viewer';
+ALTER TABLE public.feedback ADD COLUMN IF NOT EXISTS trip_date date DEFAULT CURRENT_DATE;
