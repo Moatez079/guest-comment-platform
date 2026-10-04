@@ -283,18 +283,22 @@ const ShipQRCode = ({ shipId, shipName = "Grand Rose Cruise", qrToken, onRegener
             </Button>
           </div>
 
-          <Button
-            onClick={handleRegenerate}
-            disabled={regenerating}
-            variant="destructive"
-            className="w-full mt-3 gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${regenerating ? "animate-spin" : ""}`} />
-            {regenerating ? "Regenerating..." : "Regenerate QR Code"}
-          </Button>
-          <p className="text-xs text-muted-foreground text-center mt-1">
-            This will invalidate all previously printed QR codes
-          </p>
+          {onRegenerateToken && (
+            <>
+              <Button
+                onClick={handleRegenerate}
+                disabled={regenerating}
+                variant="destructive"
+                className="w-full mt-3 gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${regenerating ? "animate-spin" : ""}`} />
+                {regenerating ? "Regenerating..." : "Regenerate QR Code"}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center mt-1">
+                This will invalidate all previously printed QR codes
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 

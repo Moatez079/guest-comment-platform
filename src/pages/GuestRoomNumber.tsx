@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { DoorOpen, Ship, Loader2, User, Building2 } from "lucide-react";
+import { DoorOpen, Ship, Loader2, User, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,10 +11,15 @@ import { t } from "@/i18n/translations";
 import GuestLayout from "@/components/guest/GuestLayout";
 import { supabase } from "@/integrations/supabase/client";
 
+const todayLocal = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
 const GuestRoomNumber = () => {
   const [room, setRoom] = useState("");
   const [guestName, setGuestName] = useState("");
-  const [companyName, setCompanyName] = useState("");
+  const [tripDate] = useState(todayLocal);
   const navigate = useNavigate();
   const { shipId } = useParams();
   const [searchParams] = useSearchParams();
@@ -56,8 +61,8 @@ const GuestRoomNumber = () => {
     const params = new URLSearchParams({
       lang,
       room: room.trim(),
+      trip_date: tripDate,
       ...(guestName.trim() && { guest_name: guestName.trim() }),
-      ...(companyName.trim() && { company_name: companyName.trim() }),
     });
     navigate(`/ship/${selectedShipId}/feedback?${params.toString()}`);
   };
@@ -137,21 +142,19 @@ const GuestRoomNumber = () => {
           />
         </div>
 
-        {/* Company Name */}
+        {/* Trip Date (auto-filled with today) */}
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1.5 justify-center">
-            <Building2 className="h-4 w-4 text-primary" />
+            <CalendarDays className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-foreground">
-              {t(lang, "companyName")}
+              {t(lang, "tripDate")}
             </span>
           </div>
           <Input
-            type="text"
-            placeholder={t(lang, "companyNamePlaceholder")}
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            className="text-center text-base h-12 border-2 focus:border-cruise-gold"
-            maxLength={100}
+            type="date"
+            value={tripDate}
+            readOnly
+            className="text-center text-base h-12 border-2 bg-muted/50"
           />
         </div>
 
