@@ -22,11 +22,45 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
-// 4-tier FREE translation (no credits): Google → LibreTranslate → MyMemory → Lingva
+// 5-tier translation: Gemini (free AI Studio key) → Google → LibreTranslate → MyMemory → Lingva
 async function translateText(text: string, sourceLang: string): Promise<string> {
   if (!text || !text.trim()) return text;
-  
-  // 1) Google Translate free endpoint
+
+  // 1) Gemini via Google AI Studio free tier
+  const geminiKey = Deno.env.get("GEMINI_API_KEY");
+  if (geminiKey) {
+    try {
+      const gRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `Translate the following guest feedback comment from language code "${sourceLang}" to English. Return ONLY the translated text, no quotes, no explanation.\n\n${text}`,
+              }],
+            }],
+            generationConfig: { temperature: 0, maxOutputTokens: 1024 },
+          }),
+        }
+      );
+      if (gRes.ok) {
+        const gData = await gRes.json();
+        const out = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (out && out.trim()) {
+          console.log("Translated via Gemini");
+          return out.trim();
+        }
+      } else {
+        await gRes.text(); // consume body
+      }
+    } catch (e) {
+      console.error("Gemini translate error:", e);
+    }
+  }
+
+  // 2) Google Translate free endpoint
   try {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=en&dt=t&q=${encodeURIComponent(text)}`;
     const res = await fetch(url);
