@@ -22,7 +22,7 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
-// 3-tier translation: Google Translate → LibreTranslate → AI Gateway
+// 4-tier FREE translation (no credits): Google → LibreTranslate → MyMemory → Lingva
 async function translateText(text: string, sourceLang: string): Promise<string> {
   if (!text || !text.trim()) return text;
   
@@ -69,74 +69,35 @@ async function translateText(text: string, sourceLang: string): Promise<string> 
     console.error("LibreTranslate error:", e);
   }
 
-  // 3) AI Gateway fallback
+  // 3) MyMemory (free, no key, no credits)
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (LOVABLE_API_KEY) {
-      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
-          messages: [
-            { role: "system", content: "You are a translator. Translate the following text to English. Output ONLY the English translation, no explanations." },
-            { role: "user", content: text },
-          ],
-          temperature: 0.1,
-        }),
-      });
-      if (aiRes.ok) {
-        const aiData = await aiRes.json();
-        const content = aiData.choices?.[0]?.message?.content?.trim();
-        if (content) {
-          console.log("Translated via AI Gateway");
-          return content;
-        }
-      } else {
-        const errBody = await aiRes.text();
-        console.error("AI fallback error:", aiRes.status, errBody);
+    const mmRes = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=${sourceLang}|en`);
+    if (mmRes.ok) {
+      const mm = await mmRes.json();
+      const out = mm?.responseData?.translatedText;
+      if (out && out.trim() && !/MYMEMORY WARNING|INVALID/i.test(out)) {
+        console.log("Translated via MyMemory");
+        return out;
       }
-    }
+    } else { await mmRes.text(); }
   } catch (e) {
-    console.error("AI fallback error:", e);
+    console.error("MyMemory error:", e);
   }
 
-  // 4) GPT-5-nano fallback (last resort)
-  try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (LOVABLE_API_KEY) {
-      const gptRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-5-nano",
-          messages: [
-            { role: "system", content: "You are a translator. Translate the following text to English. Output ONLY the English translation, no explanations." },
-            { role: "user", content: text },
-          ],
-          temperature: 0.1,
-        }),
-      });
-      if (gptRes.ok) {
-        const gptData = await gptRes.json();
-        const content = gptData.choices?.[0]?.message?.content?.trim();
-        if (content) {
-          console.log("Translated via GPT-5-nano");
-          return content;
+  // 4) Lingva (free Google mirror, no key, no credits)
+  for (const host of ["https://lingva.ml", "https://lingva.lunar.icu"]) {
+    try {
+      const lvRes = await fetch(`${host}/api/v1/${sourceLang}/en/${encodeURIComponent(text)}`);
+      if (lvRes.ok) {
+        const lv = await lvRes.json();
+        if (lv?.translation?.trim()) {
+          console.log("Translated via Lingva");
+          return lv.translation;
         }
-      } else {
-        const errBody = await gptRes.text();
-        console.error("GPT-5-nano fallback error:", gptRes.status, errBody);
-      }
+      } else { await lvRes.text(); }
+    } catch (e) {
+      console.error("Lingva error:", e);
     }
-  } catch (e) {
-    console.error("GPT-5-nano fallback error:", e);
   }
 
   return text; // Return original if all fails
