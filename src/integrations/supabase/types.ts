@@ -28,6 +28,7 @@ export type Database = {
           room_number: string
           ship_id: string
           submitted_at: string
+          trip_date: string | null
         }
         Insert: {
           comments?: Json
@@ -42,6 +43,7 @@ export type Database = {
           room_number: string
           ship_id: string
           submitted_at?: string
+          trip_date?: string | null
         }
         Update: {
           comments?: Json
@@ -56,6 +58,7 @@ export type Database = {
           room_number?: string
           ship_id?: string
           submitted_at?: string
+          trip_date?: string | null
         }
         Relationships: [
           {
@@ -221,7 +224,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "system_owner" | "ship_owner" | "manager" | "reception"
+      app_role:
+        | "system_owner"
+        | "ship_owner"
+        | "manager"
+        | "reception"
+        | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -349,7 +357,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["system_owner", "ship_owner", "manager", "reception"],
+      app_role: [
+        "system_owner",
+        "ship_owner",
+        "manager",
+        "reception",
+        "viewer",
+      ],
     },
   },
 } as const
