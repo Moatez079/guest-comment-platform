@@ -79,6 +79,7 @@ const AdminDashboard = () => {
   const [userShips, setUserShips] = useState<{ id: string; name: string }[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [canDeleteFeedback, setCanDeleteFeedback] = useState(false);
+  const [isViewer, setIsViewer] = useState(false);
   const [qrToken, setQrToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,12 +110,13 @@ const AdminDashboard = () => {
       supabase.from("profiles").select("can_delete_feedback").eq("user_id", user.id).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "viewer"),
     ]);
-    const isViewer = !!viewerRoles && viewerRoles.length > 0 && !(roles && roles.length > 0);
+    const viewerOnly = !!viewerRoles && viewerRoles.length > 0 && !(roles && roles.length > 0);
+    setIsViewer(viewerOnly);
     
-    if (profile?.can_delete_feedback && !isViewer) {
+    if (profile?.can_delete_feedback && !viewerOnly) {
       setCanDeleteFeedback(true);
     }
-    if (isViewer) setCanDeleteFeedback(false);
+    if (viewerOnly) setCanDeleteFeedback(false);
 
     // Check for ship query param first
     const shipParam = searchParams.get("ship");
@@ -476,10 +478,12 @@ const AdminDashboard = () => {
                   <Button variant="outline" size="sm" className="gap-2" onClick={downloadAllPdfs}>
                     <Download className="h-4 w-4" /> Download All
                   </Button>
+                  {!isViewer && (
                   <Button variant="outline" size="sm" className="gap-2" onClick={regenerateAllPdfs} disabled={regeneratingPdfs}>
                     {regeneratingPdfs ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     {regeneratingPdfs ? "Regenerating..." : "Regenerate PDFs"}
                   </Button>
+                  )}
                   {canDeleteFeedback && (
                     <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={deleteAllFeedback}>
                       <Trash2 className="h-4 w-4" /> Delete All
@@ -861,7 +865,7 @@ const AdminDashboard = () => {
                 shipId={shipId}
                 shipName={shipName}
                 qrToken={qrToken || undefined}
-                onRegenerateToken={async () => {
+                onRegenerateToken={isViewer ? undefined : async () => {
                   const newToken = crypto.randomUUID();
                   const { error } = await supabase.from("ships").update({ qr_token: newToken }).eq("id", shipId);
                   if (error) throw error;
