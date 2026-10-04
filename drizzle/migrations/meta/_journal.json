@@ -8,6 +8,13 @@
       "when": 1791145575580,
       "tag": "0000_viewer_role_trip_date",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791145587583,
+      "tag": "0001_ship_owner_viewer_roles",
+      "breakpoints": true
     }
   ]
 }
